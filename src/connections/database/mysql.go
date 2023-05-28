@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"fiuba/concurrent/gochat/src/models/config"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
@@ -16,12 +17,17 @@ type MySQLConnection struct {
 }
 
 func GetConnection() *sql.DB {
+	var cfg config.Config
+	cfg.GetConfig()
+
+	MySQLConfig := cfg.MySQL
+
 	model := MySQLConnection {
-		Host: "localhost",
-		Port: 3306,
-		Username: "yisus",
-		Password: "46139282",
-		Database: "gochat",
+		Host: MySQLConfig.Host,
+		Port: MySQLConfig.Port,
+		Username: MySQLConfig.Username,
+		Password: MySQLConfig.Password,
+		Database: MySQLConfig.Database,
 	}
 
 	return model.Connect()
