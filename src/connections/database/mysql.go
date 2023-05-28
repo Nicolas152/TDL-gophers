@@ -17,11 +17,11 @@ type MySQLConnection struct {
 }
 
 func GetConnection() *sql.DB {
-	var cfg config.Config
-	cfg.GetConfig()
+	// Obtengo la configuracion
+	cfg := config.GetConfig()
 
+	// Obtengo la configuracion de MySQL
 	MySQLConfig := cfg.MySQL
-
 	model := MySQLConnection {
 		Host: MySQLConfig.Host,
 		Port: MySQLConfig.Port,
