@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fiuba/concurrent/gochat/src/controllers"
+	"gochat/src/controllers"
 	"log"
 	"net/http"
 )

@@ -2,9 +2,9 @@ package database
 
 import (
 	"database/sql"
-	"fiuba/concurrent/gochat/src/models/config"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"gochat/src/models/config"
 	"log"
 )
 

@@ -1,37 +1,63 @@
 package authentication
 
 import (
-	"fiuba/concurrent/gochat/src/helpers/messages"
-	handler "fiuba/concurrent/gochat/src/helpers/user"
-	model "fiuba/concurrent/gochat/src/models/user"
+	"encoding/json"
+	"errors"
 	"github.com/gorilla/websocket"
+	"gochat/src/models/authentication"
+	"gochat/src/models/request"
+	"gochat/src/models/user"
 )
 
-type FunctionHandler func(ws *websocket.Conn) (model.User, error)
+// Metodo que desencapsula las credenciales del usuario
+func HandlerAuthentication(ws *websocket.Conn) (user.User, error) {
+	var userRequest request.UserRequest
+	var userCredentials authentication.UserCredentials
+	var authenticate authentication.AuthenticationFunction
 
-func HandlerSignIn(ws *websocket.Conn) (model.User, error) {
-	messages.SendSignInMessage(ws)
-
-	// Creo el usuario
-	user, err := handler.HandlerCreateUser(ws)
-	if err != nil {
-		messages.SendErrorInvalidUserMessage(ws)
-		return model.User{}, err
+	// Recibo el mensaje con la acción a realizar
+	if err := userRequest.ReadRequest(ws); err != nil {
+		return user.User{}, err
 	}
 
-	return user, nil
-}
+	// Obtengo la función a ejecutar en base a la acción
+	switch userRequest.GetAction() {
+		case request.SignInAction:
+			authenticate = userCredentials.SignIn
 
-func HandlerLogIn(ws *websocket.Conn) (model.User, error) {
-	messages.SendLogInMessage(ws)
+		case request.LogInAction:
+			authenticate = userCredentials.LogIn
 
-	// Valido el usuario
-	user, err := handler.HandlerValidateUser(ws)
-	if err != nil {
-		messages.SendErrorInvalidUserMessage(ws)
-		return model.User{}, err
+		default:
+			return user.User{}, errors.New("Invalid 'action' option provided")
 	}
 
-	return user, nil
+	// Si no tiene parametros, no se puede autenticar
+	if !userRequest.HasParameters() {
+		return user.User{}, errors.New("No parameters provided")
+	}
+
+	// Desencapsulo las credenciales del usuario
+	if err := json.Unmarshal(userRequest.GetParameters(), &userCredentials); err != nil {
+		return user.User{}, err
+	}
+
+	// El resto de la autenticacion la delego a otra funcion
+	return HandlerUserAuthentication(userCredentials, authenticate)
 }
 
+// Metodo que valida las credenciales del usuario y obtiene el data del mismo
+func HandlerUserAuthentication(userCredentials authentication.UserCredentials, authenticate authentication.AuthenticationFunction) (user.User, error) {
+	// Autentico al usuario con la función correspondiente
+	if err := authenticate(); err != nil {
+		return user.User{}, err
+	}
+
+	// Obtengo contexto del usuario
+	userModel := user.User{Email: *userCredentials.Email}
+	if err := userModel.GetContext(); err != nil {
+		return user.User{}, err
+	}
+
+	return userModel, nil
+}

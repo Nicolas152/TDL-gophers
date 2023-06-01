@@ -1,42 +1,40 @@
 package workspace
 
 import (
-	"fiuba/concurrent/gochat/src/connections/database"
+	"gochat/src/connections/database"
+	"gochat/src/helpers/common"
 )
 
+type WorkspaceInterface interface {
+	Create() error
+	Update() error
+	Delete() error
+}
+
 type Workspace struct {
-	Id 			int
-	Name 		string
-	Description string
+	Id 				int
+	WorkflowKey 	string
+	Name 			string
+	Password 		string
 }
 
 
-func EmptyWorkspace() Workspace {
-	return Workspace{Id: -1}
-}
-
-func (workspace Workspace) IsEmpty() bool {
-	return workspace.Id == -1
-}
-
-func GetWorkspaceById(id int) (Workspace, error) {
+func GetWorkspaceByKey(key string) (Workspace, error) {
 	conn := database.GetConnection()
 	defer conn.Close()
 
-	result := (*conn).QueryRow("SELECT name, description FROM workspaces WHERE id = ?", id)
+	result := (*conn).QueryRow("SELECT id, name FROM workspaces WHERE workflow_key = ?", key)
 
+	var id int
 	var name string
-	var description string
 
-	err := result.Scan(&name, &description)
+	err := result.Scan(&id, &name)
 	if err != nil {
 		return Workspace{}, err
 	}
 
-	return Workspace{id, name, description}, nil
+	return Workspace{id, key, name, ""}, nil
 }
-
-// Manejo de workspaces
 
 func Get() []Workspace {
 	workspaces := make([]Workspace, 0)
@@ -44,36 +42,32 @@ func Get() []Workspace {
 	conn := database.GetConnection()
 	defer conn.Close()
 
-	results, _ := (*conn).Query("SELECT id, name, description FROM workspaces")
+	results, _ := (*conn).Query("SELECT workflow_key, name, password FROM workspaces")
 
 	for results.Next() {
 		var workspace Workspace
-		results.Scan(&workspace.Id, &workspace.Name, &workspace.Description)
+		results.Scan(&workspace.WorkflowKey, &workspace.Name, &workspace.Password)
 		workspaces = append(workspaces, workspace)
 	}
 
 	return workspaces
 }
 
-func Create(name string, description string, password string) (Workspace, error) {
+// Manejo de workspaces
+func (workspace Workspace) Create(userId int) error {
 	conn := database.GetConnection()
 	defer conn.Close()
 
-	stmt, _ := (*conn).Prepare("INSERT INTO workspaces (name, description, password) VALUES (?, ?, ?)")
-	res, err := stmt.Exec(name, description, password)
-	if err != nil {
-		return Workspace{}, err
-	}
-
-	id, _ := res.LastInsertId()
-	return Workspace{int(id), name, description}, err
+	stmt, _ := (*conn).Prepare("INSERT INTO workspaces (workflow_key, name, password) VALUES (?, ?, ?)")
+	_, err := stmt.Exec(common.CreateKey(), workspace.Name, workspace.Password)
+	return err
 }
 
-func (workspace Workspace) Modify(name string, description string, password string) error {
+func (workspace Workspace) Update(userId int, newWorkspace Workspace) error {
 	conn := database.GetConnection()
 	defer conn.Close()
 
-	_, err := (*conn).Exec("UPDATE workspaces SET name = ?, description = ? WHERE id = ?", name, description, workspace.Id)
+	_, err := (*conn).Exec("UPDATE workspaces SET name = ?, password = ? WHERE workflow_key = ?", newWorkspace.Name, newWorkspace.Password, workspace.WorkflowKey)
 	if err != nil {
 		return err
 	}
@@ -81,54 +75,11 @@ func (workspace Workspace) Modify(name string, description string, password stri
 	return nil
 }
 
-func (workspace Workspace) Delete() error {
+func (workspace Workspace) Delete(userId int) error {
 	conn := database.GetConnection()
 	defer conn.Close()
 
-	_, err := (*conn).Exec("DELETE FROM workspaces WHERE id = ?", workspace.Id)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Manejo de relaciones con usuarios
-
-func (workspace Workspace) GetUsers() []int {
-	users := make([]int, 0)
-
-	conn := database.GetConnection()
-	defer conn.Close()
-
-	results, _ := (*conn).Query("SELECT user_id FROM user_workspace WHERE workspace_id = ?", workspace.Id)
-
-	for results.Next() {
-		var userId int
-		results.Scan(&userId)
-		users = append(users, userId)
-	}
-
-	return users
-}
-
-func (workspace Workspace) AddUser(userId int) error {
-	conn := database.GetConnection()
-	defer conn.Close()
-
-	_, err := (*conn).Exec("INSERT INTO user_workspace (user_id, workspace_id) VALUES (?, ?)", userId, workspace.Id)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (workspace Workspace) RemoveUser(userId int) error {
-	conn := database.GetConnection()
-	defer conn.Close()
-
-	_, err := (*conn).Exec("DELETE FROM user_workspace WHERE user_id = ? AND workspace_id = ?", userId, workspace.Id)
+	_, err := (*conn).Exec("DELETE FROM workspaces WHERE workflow_key = ?", workspace.WorkflowKey)
 	if err != nil {
 		return err
 	}

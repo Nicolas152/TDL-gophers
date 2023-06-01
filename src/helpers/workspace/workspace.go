@@ -2,60 +2,78 @@ package workspace
 
 import (
 	"encoding/json"
-	"fiuba/concurrent/gochat/src/helpers/messages"
-	"fiuba/concurrent/gochat/src/models/user"
-	"fiuba/concurrent/gochat/src/models/workspace"
+	"errors"
 	"github.com/gorilla/websocket"
-	"log"
+	"gochat/src/models/request"
+	"gochat/src/models/workspace"
 )
 
-func HandlerWorkspaceMessages(ws *websocket.Conn, user *user.User) error {
-	selectedWorkspace := workspace.EmptyWorkspace()
+func HandlerWorkspaceMessages(ws *websocket.Conn, userRequest request.UserRequest) error {
 
-	for {
-		messages.SendWorkspaceMessage(ws)
-		_, msg, _ := ws.ReadMessage()
+	switch userRequest.GetAction() {
+		case request.ListAction:
+			workspaces := workspace.Get()
+			message, _ := json.Marshal(workspaces)
 
-		switch string(msg) {
+			ws.WriteMessage(websocket.TextMessage, message)
 
-			case "list":
-				workspaces := workspace.Get()
-				message, _ := json.Marshal(workspaces)
+		case request.CreateAction:
+			if !userRequest.HasParameters() {
+				return errors.New("Parameters are required")
+			}
 
-				ws.WriteMessage(websocket.TextMessage, message)
+			var workspaceModel workspace.Workspace
+			if err := json.Unmarshal(userRequest.GetParameters(), &workspaceModel); err != nil {
+				return err
+			}
 
-			case "select":
-				selectedWorkspaceId := messages.AskSelectWorkspaceMessage(ws)
-				selectedWorkspace, _ = workspace.GetWorkspaceById(selectedWorkspaceId)
+			if err := workspaceModel.Create(userRequest.GetUserId()); err != nil {
+				return err
+			}
 
-			case "create":
-				name, description, password := messages.AskCreateWorkspaceMessage(ws)
-				(*user).CreateWorkspace(name, description, password)
+		case request.UpdateAction:
+			if !userRequest.HasId() {
+				return errors.New("Id is required")
+			}
 
-			case "modify":
-				if selectedWorkspace.IsEmpty() {
-					log.Println("No se seleccionó ningún workspace. Selecciona uno con 'select'")
-					continue
-				}
+			if !userRequest.HasParameters() {
+				return errors.New("Parameters are required")
+			}
 
-				name, description, password := messages.AskModifyWorkspaceMessage(ws)
-				(*user).ModifyWorkspace(&selectedWorkspace, name, description, password)
+			// Obtengo el workspace actual
+			currentWorkspaceModel, err := workspace.GetWorkspaceByKey(userRequest.GetId())
+			if err != nil {
+				return err
+			}
 
-			case "delete":
-				if selectedWorkspace.IsEmpty() {
-					log.Println("No se seleccionó ningún workspace. Selecciona uno con 'select'")
-					continue
-				}
+			// Obtengo los parametros a actualizar del request
+			var workspaceModel workspace.Workspace
+			if err := json.Unmarshal(userRequest.GetParameters(), &workspaceModel); err != nil {
+				return err
+			}
 
-				(*user).DeleteWorkspace(&selectedWorkspace)
-				selectedWorkspace = workspace.EmptyWorkspace()
+			if err := currentWorkspaceModel.Update(userRequest.GetUserId(), workspaceModel); err != nil {
+				return err
+			}
 
-			case "back":
-				return nil
+		case request.DeleteAction:
+			if !userRequest.HasId() {
+				return errors.New("Id is required")
+			}
+
+			// Obtengo el workspace actual
+			currentWorkspaceModel, err := workspace.GetWorkspaceByKey(userRequest.GetId())
+			if err != nil {
+				return err
+			}
+
+			if err := currentWorkspaceModel.Delete(userRequest.GetUserId()); err != nil {
+				return err
+			}
 
 		default:
-			log.Println("Opcion invalida. Ingresa 'list', 'select', 'create', 'modify', 'delete' o 'back'")
-
-		}
+			return errors.New("Invalid 'action' for 'workspace' model provided")
 	}
+
+	return nil
 }
