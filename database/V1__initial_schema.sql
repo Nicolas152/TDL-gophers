@@ -1,3 +1,10 @@
+DROP TABLE IF EXISTS `messages`;
+DROP TABLE IF EXISTS `chats`;
+DROP TABLE IF EXISTS `channels`;
+DROP TABLE IF EXISTS `user_workspace`;
+DROP TABLE IF EXISTS `workspaces`;
+DROP TABLE IF EXISTS `users`;
+
 -- Creo la tabla de Users
 CREATE TABLE IF NOT EXISTS `users` (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -20,6 +27,18 @@ CREATE TABLE IF NOT EXISTS `workspaces` (
     updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY `name` (`name`),
     CONSTRAINT `workspaces_fk_1` FOREIGN KEY (`creator`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- Creo tabla de relaciones entre usuarios y workspaces
+CREATE TABLE IF NOT EXISTS `user_workspace` (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    workspace_id INT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY `user_id` (`user_id`),
+    KEY `workspace_id` (`workspace_id`),
+    CONSTRAINT `user_workspace_fk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `user_workspace_fk_2` FOREIGN KEY (`workspace_id`) REFERENCES `workspaces` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- Creo la tabla de Channels
@@ -59,17 +78,5 @@ CREATE TABLE IF NOT EXISTS `messages` (
     KEY `channel_id` (`channel_id`),
     KEY `user_id` (`user_id`),
     CONSTRAINT `messages_fk_1` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- Creo tabla de relaciones entre usuarios y workspaces
-CREATE TABLE IF NOT EXISTS `user_workspace` (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    workspace_id INT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    KEY `user_id` (`user_id`),
-    KEY `workspace_id` (`workspace_id`),
-    CONSTRAINT `user_workspace_fk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `user_workspace_fk_2` FOREIGN KEY (`workspace_id`) REFERENCES `workspaces` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 

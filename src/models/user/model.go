@@ -76,7 +76,7 @@ func (user User) Authenticate() bool {
 	return true
 }
 
-func (user User) GetContext() error {
+func (user *User) GetContext() error {
 	// Obtengo el contexto del usuario
 	conn := database.GetConnection()
 	defer conn.Close()
