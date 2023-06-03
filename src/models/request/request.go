@@ -17,6 +17,7 @@ const (
 	CreateAction ActionType = "create"
 	UpdateAction ActionType = "update"
 	DeleteAction ActionType = "delete"
+	JoinAction   ActionType = "join"
 )
 
 const (

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/websocket"
+	"gochat/src/models/relationship"
 	"gochat/src/models/request"
 	"gochat/src/models/workspace"
 )
@@ -19,33 +20,38 @@ func HandlerWorkspaceMessages(ws *websocket.Conn, userRequest request.UserReques
 
 			ws.WriteMessage(websocket.TextMessage, message)
 
-	case request.CreateAction:
-		if err := HandlerCreateWorkspaceMessage(userRequest); err != nil {
-			return err
-		}
+		case request.CreateAction:
+			if err := HandlerCreateWorkspaceMessage(userRequest); err != nil {
+				return err
+			}
 
-	case request.UpdateAction:
-		if err := HandlerUpdateWorkspaceMessage(userRequest); err != nil {
-			return err
-		}
+		case request.UpdateAction:
+			if err := HandlerUpdateWorkspaceMessage(userRequest); err != nil {
+				return err
+			}
 
-	case request.DeleteAction:
-		if err := HandlerDeleteWorkspaceMessage(userRequest); err != nil {
-			return err
-		}
+		case request.DeleteAction:
+			if err := HandlerDeleteWorkspaceMessage(userRequest); err != nil {
+				return err
+			}
 
-	default:
-		return errors.New("Invalid 'action' for 'workspace' model provided")
+		case request.JoinAction:
+			if err := HandlerJoinWorkspaceMessage(userRequest); err != nil {
+				return err
+			}
+
+		default:
+			return errors.New("Invalid 'action' for 'workspace' model provided")
 	}
 
 	return nil
 }
 
+
 func HandlerListWorkspaceMessage(userRequest request.UserRequest) ([]byte, error) {
 	workspaces := workspace.Get()
 	return json.Marshal(workspaces)
 }
-
 
 func HandlerCreateWorkspaceMessage(userRequest request.UserRequest) error {
 	// Valido que el request tenga parametros
@@ -113,4 +119,37 @@ func HandlerDeleteWorkspaceMessage(userRequest request.UserRequest) error {
 		return err
 	}
 	return nil
+}
+
+func HandlerJoinWorkspaceMessage(userRequest request.UserRequest) error {
+	if !userRequest.HasId() {
+		return errors.New("Id is required")
+	}
+
+	// Obtengo el workspace actual
+	currentWorkspaceModel, err := workspace.GetWorkspaceByKey(userRequest.GetId())
+	if err != nil {
+		return err
+	}
+
+	// Valido que el usuario tenga permisos para unirse al workspace
+	if !currentWorkspaceModel.IsPublic() {
+		if !userRequest.HasParameters() {
+			return errors.New("Parameters are required")
+		}
+
+		// Obtengo los parametros del request
+		var workspaceModel workspace.Workspace
+		if err := json.Unmarshal(userRequest.GetParameters(), &workspaceModel); err != nil {
+			return err
+		}
+
+		if !currentWorkspaceModel.Authenticate(workspaceModel) {
+			return errors.New("Invalid password")
+		}
+	}
+
+	// Agrego al usuario al workspace
+	userWorkflow := relationship.UserWorkspaceRelationship{UserId: userRequest.GetUserId(), WorkspaceId: currentWorkspaceModel.GetId()}
+	return userWorkflow.Create()
 }

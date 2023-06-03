@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS `user_workspace` (
     user_id INT NOT NULL,
     workspace_id INT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY `user_workspace_unique` (`user_id`, `workspace_id`),
     KEY `user_id` (`user_id`),
     KEY `workspace_id` (`workspace_id`),
     CONSTRAINT `user_workspace_fk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,

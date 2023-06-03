@@ -7,9 +7,13 @@ import (
 )
 
 type WorkspaceInterface interface {
+	GetId() int
 	Create() error
 	Update() error
 	Delete() error
+
+	IsPublic() bool
+	Authenticate() bool
 }
 
 type Workspace struct {
@@ -25,18 +29,19 @@ func GetWorkspaceByKey(key string) (Workspace, error) {
 	conn := database.GetConnection()
 	defer conn.Close()
 
-	result := (*conn).QueryRow("SELECT id, name, creator FROM workspaces WHERE workflow_key = ?", key)
+	result := (*conn).QueryRow("SELECT id, name, creator, password FROM workspaces WHERE workflow_key = ?", key)
 
 	var id int
 	var name string
 	var creator int
+	var password string
 
-	err := result.Scan(&id, &name, &creator)
+	err := result.Scan(&id, &name, &creator, &password)
 	if err != nil {
 		return Workspace{}, err
 	}
 
-	return Workspace{id, key, name, "", creator}, nil
+	return Workspace{id, key, name, password, creator}, nil
 }
 
 func Get() []Workspace {
@@ -57,6 +62,10 @@ func Get() []Workspace {
 }
 
 // Manejo de workspaces
+func (workspace Workspace) GetId() int {
+	return workspace.Id
+}
+
 func (workspace Workspace) Create(userId int) error {
 	conn := database.GetConnection()
 	defer conn.Close()
@@ -74,8 +83,8 @@ func (workspace Workspace) Create(userId int) error {
 	}
 
 	// Creo la relacion entre el usuario y el workspace
-	user_workspace := relationship.UserWorkspaceRelationship{UserId: userId, WorkspaceId: int(workspaceId)}
-	return user_workspace.Create()
+	userWorkflow := relationship.UserWorkspaceRelationship{UserId: userId, WorkspaceId: int(workspaceId)}
+	return userWorkflow.Create()
 }
 
 func (workspace Workspace) Update(userId int, newWorkspace Workspace) error {
@@ -100,4 +109,12 @@ func (workspace Workspace) Delete(userId int) error {
 	}
 
 	return nil
+}
+
+func (workspace Workspace) IsPublic() bool {
+	return workspace.Password == ""
+}
+
+func (workspace Workspace) Authenticate(newWorkspace Workspace) bool {
+	return workspace.Password == newWorkspace.Password
 }
