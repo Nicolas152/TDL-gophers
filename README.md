@@ -18,7 +18,7 @@ El archivo de configuracion se encuentra ubicado en `src/config/local.yaml`.
 | database | string | MySQL database | gochat |
 
 
-## Getting Statred
+## Getting Started
 Para poder interactuar con el API de GoChat es necesario iniciar una conexion 
 websocket con el mismo. Es importante aclarar que toda interaccion con el API 
 exije hacer uso del siguiente formato.
