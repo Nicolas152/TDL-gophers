@@ -1,3 +1,9 @@
+-- Crear la base de datos
+CREATE DATABASE IF NOT EXISTS gochat;
+
+-- Usar la base de datos
+USE gochat;
+
 DROP TABLE IF EXISTS `messages`;
 DROP TABLE IF EXISTS `chats`;
 DROP TABLE IF EXISTS `channels`;
