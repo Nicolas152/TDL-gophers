@@ -1,24 +1,55 @@
 package authentication
 
-import (
-	"errors"
-	"gochat/src/models/user"
+import "errors"
+import "gochat/src/models/user"
+
+type AuthenticationType string
+
+const (
+	SignIn 	AuthenticationType = "SignIn"
+	LogIn 	AuthenticationType = "LogIn"
+	Access 	AuthenticationType = "Access"
 )
 
 type AuthenticationInterface interface {
+	SetAuthenticationType(authenticationType AuthenticationType)
+
 	SignIn() error
 	LogIn() error
 	Access() error
 }
 
 type UserCredentials struct {
-	Email		*string `json:"email"`
-	Name 		*string `json:"name"`
-	Password 	*string `json:"password"`
+	AuthenticationType 	AuthenticationType 	`json:"authenticationType"`
+	Email				*string 			`json:"email"`
+	Name 				*string 			`json:"name"`
+	Password 			*string 			`json:"password"`
 }
 
 type AuthenticationFunction func() error
 
+func (credentials *UserCredentials) SetAuthenticationType(authenticationType AuthenticationType) {
+	credentials.AuthenticationType = authenticationType
+}
+
+func (credentials *UserCredentials) Authenticate() error {
+	// Valido el tipo de autenticación
+	if credentials.AuthenticationType == "" {
+		return errors.New("Authentication type is required")
+	}
+
+	// Valido las credenciales del usuario
+	switch credentials.AuthenticationType {
+	case SignIn:
+		return credentials.SignIn()
+	case LogIn:
+		return credentials.LogIn()
+	case Access:
+		return credentials.Access()
+	default:
+		return errors.New("Invalid authentication type")
+	}
+}
 
 func (credentials *UserCredentials) SignIn() error {
 	// Son necesarios el email, el nombre y el password

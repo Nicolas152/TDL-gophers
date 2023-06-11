@@ -3,52 +3,51 @@ package workspace
 import (
 	"encoding/json"
 	"errors"
-	"github.com/gorilla/websocket"
 	"gochat/src/models/relationship"
 	"gochat/src/models/request"
 	"gochat/src/models/workspace"
 )
 
-func HandlerWorkspaceMessages(ws *websocket.Conn, userRequest request.UserRequest) error {
+//func HandlerWorkspaceMessages(w http.ResponseWriter, r *http.Request, userRequest request.UserRequest) error {
+//
+//	switch userRequest.GetAction() {
+//		case request.ListAction:
+//			message, err := HandlerListWorkspace()
+//			if err != nil {
+//				return err
+//			}
+//
+//			ws.WriteMessage(websocket.TextMessage, message)
+//
+//		case request.CreateAction:
+//			if err := HandlerCreateWorkspaceMessage(userRequest); err != nil {
+//				return err
+//			}
+//
+//		case request.UpdateAction:
+//			if err := HandlerUpdateWorkspaceMessage(userRequest); err != nil {
+//				return err
+//			}
+//
+//		case request.DeleteAction:
+//			if err := HandlerDeleteWorkspaceMessage(userRequest); err != nil {
+//				return err
+//			}
+//
+//		case request.JoinAction:
+//			if err := HandlerJoinWorkspaceMessage(userRequest); err != nil {
+//				return err
+//			}
+//
+//		default:
+//			return errors.New("Invalid 'action' for 'workspace' model provided")
+//	}
+//
+//	return nil
+//}
 
-	switch userRequest.GetAction() {
-		case request.ListAction:
-			message, err := HandlerListWorkspaceMessage(userRequest)
-			if err != nil {
-				return err
-			}
 
-			ws.WriteMessage(websocket.TextMessage, message)
-
-		case request.CreateAction:
-			if err := HandlerCreateWorkspaceMessage(userRequest); err != nil {
-				return err
-			}
-
-		case request.UpdateAction:
-			if err := HandlerUpdateWorkspaceMessage(userRequest); err != nil {
-				return err
-			}
-
-		case request.DeleteAction:
-			if err := HandlerDeleteWorkspaceMessage(userRequest); err != nil {
-				return err
-			}
-
-		case request.JoinAction:
-			if err := HandlerJoinWorkspaceMessage(userRequest); err != nil {
-				return err
-			}
-
-		default:
-			return errors.New("Invalid 'action' for 'workspace' model provided")
-	}
-
-	return nil
-}
-
-
-func HandlerListWorkspaceMessage(userRequest request.UserRequest) ([]byte, error) {
+func HandlerListWorkspace(userId int) ([]byte, error) {
 	workspaces := workspace.Get()
 	return json.Marshal(workspaces)
 }
