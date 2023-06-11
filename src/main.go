@@ -1,22 +1,24 @@
 package main
 
 import (
+	"github.com/gorilla/mux"
 	"gochat/src/controllers"
 	"log"
 	"net/http"
 )
 
-func AddRoutes() {
-	controllers.AddWebsocketController()
+func AddRoutes(myRouter *mux.Router)  {
+	controllers.AddAuthenticationsController(myRouter)
+	controllers.AddWorkspaceController(myRouter)
 }
 
 
 func main()  {
 	log.Printf("Starting Server...")
-	AddRoutes()
+	myRouter := mux.NewRouter().StrictSlash(true)
+	AddRoutes(myRouter)
 
-	err := http.ListenAndServe(":8080", nil)
-	if err != nil {
+	if err := http.ListenAndServe(":8080", myRouter); err != nil {
 		log.Printf("Error al iniciar el servidor: ", err)
 	}
 }

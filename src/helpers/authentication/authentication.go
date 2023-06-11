@@ -2,62 +2,64 @@ package authentication
 
 import (
 	"encoding/json"
-	"errors"
-	"github.com/gorilla/websocket"
 	"gochat/src/models/authentication"
-	"gochat/src/models/request"
+	"gochat/src/models/session"
 	"gochat/src/models/user"
+	"log"
+	"net/http"
 )
 
-// Metodo que desencapsula las credenciales del usuario
-func HandlerAuthentication(ws *websocket.Conn) (user.User, error) {
-	var userRequest request.UserRequest
+const SessionTokenName = "session-token"
+
+func HandlerSignIn(w http.ResponseWriter, r *http.Request) {
 	var userCredentials authentication.UserCredentials
-	var authenticate authentication.AuthenticationFunction
 
-	// Recibo el mensaje con la acción a realizar
-	if err := userRequest.ReadRequest(ws); err != nil {
-		return user.User{}, err
-	}
-
-	// Obtengo la función a ejecutar en base a la acción
-	switch userRequest.GetAction() {
-		case request.SignInAction:
-			authenticate = userCredentials.SignIn
-
-		case request.LogInAction:
-			authenticate = userCredentials.LogIn
-
-		default:
-			return user.User{}, errors.New("Invalid 'action' option provided")
-	}
-
-	// Si no tiene parametros, no se puede autenticar
-	if !userRequest.HasParameters() {
-		return user.User{}, errors.New("No parameters provided")
-	}
-
-	// Desencapsulo las credenciales del usuario
-	if err := json.Unmarshal(userRequest.GetParameters(), &userCredentials); err != nil {
-		return user.User{}, err
-	}
-
-	// El resto de la autenticacion la delego a otra funcion
-	return HandlerUserAuthentication(userCredentials, authenticate)
+	// Autentico al usuario
+	userCredentials.SetAuthenticationType(authentication.SignIn)
+	HandlerUserAuthentication(w, r, &userCredentials)
 }
 
-// Metodo que valida las credenciales del usuario y obtiene el data del mismo
-func HandlerUserAuthentication(userCredentials authentication.UserCredentials, authenticate authentication.AuthenticationFunction) (user.User, error) {
-	// Autentico al usuario con la función correspondiente
-	if err := authenticate(); err != nil {
-		return user.User{}, err
+func HandlerLogIn(w http.ResponseWriter, r *http.Request) {
+	var userCredentials authentication.UserCredentials
+	userCredentials.SetAuthenticationType(authentication.LogIn)
+
+	// Autentico al usuario
+	log.Println("LogIn")
+	HandlerUserAuthentication(w, r, &userCredentials)
+
+	// Agrero el token de sesion
+	userSession := session.Session{Email: *userCredentials.Email, Token: "123456789"}
+	userSession.Add()
+}
+
+func HandlerAccess(w http.ResponseWriter, r *http.Request) *user.User {
+	// Obtengo el token de sesion
+	userSession := session.Get(r.Header.Get(SessionTokenName))
+	if userSession == nil {
+		http.Error(w, "Could not authenticate user. Reason: Invalid session token", http.StatusBadRequest)
+		return nil
 	}
 
-	// Obtengo contexto del usuario
-	userModel := user.User{Email: *userCredentials.Email}
+	// Resuelvo el email del usuario
+	userModel := user.User{Email: (*userSession).Email}
 	if err := userModel.GetContext(); err != nil {
-		return user.User{}, err
+		http.Error(w, "Could not authenticate user. Reason: " + err.Error(), http.StatusBadRequest)
+		return nil
 	}
 
-	return userModel, nil
+	return &userModel
+}
+
+func HandlerUserAuthentication(w http.ResponseWriter, r *http.Request, userCredentials *authentication.UserCredentials) {
+	// Obtengo el usuario y la contraseña del request
+	if err := json.NewDecoder(r.Body).Decode(userCredentials); err != nil {
+		http.Error(w, "Could not authenticate user. Reason: Empty payload detected", http.StatusBadRequest)
+		return
+	}
+
+	// Autentico al usuario
+	if err := userCredentials.Authenticate(); err != nil {
+		http.Error(w, "Could not authenticate user. Reason: " + err.Error(), http.StatusBadRequest)
+		return
+	}
 }
