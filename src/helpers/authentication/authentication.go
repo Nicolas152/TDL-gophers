@@ -5,7 +5,6 @@ import (
 	"gochat/src/models/authentication"
 	"gochat/src/models/session"
 	"gochat/src/models/user"
-	"log"
 	"net/http"
 )
 
@@ -24,12 +23,12 @@ func HandlerLogIn(w http.ResponseWriter, r *http.Request) {
 	userCredentials.SetAuthenticationType(authentication.LogIn)
 
 	// Autentico al usuario
-	log.Println("LogIn")
 	HandlerUserAuthentication(w, r, &userCredentials)
 
 	// Agrero el token de sesion
-	userSession := session.Session{Email: *userCredentials.Email, Token: "123456789"}
-	userSession.Add()
+	userSession := session.Session{Email: *userCredentials.Email}
+	token := userSession.Add()
+	w.Header().Set(SessionTokenName, token)
 }
 
 func HandlerAccess(w http.ResponseWriter, r *http.Request) *user.User {

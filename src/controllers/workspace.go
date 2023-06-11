@@ -10,6 +10,7 @@ import (
 func AddWorkspaceController(myRouter *mux.Router)  {
 	// Handler para obtener y crear un workspace
 	myRouter.HandleFunc("/gophers/workspace", func(w http.ResponseWriter, r *http.Request) {
+		// Valido que el usuario este logueado
 		userModel := authentication.HandlerAccess(w, r)
 		if userModel == nil { return }
 

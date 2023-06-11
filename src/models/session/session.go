@@ -1,5 +1,10 @@
 package session
 
+import (
+	"crypto/sha1"
+	"encoding/base64"
+)
+
 type Session struct {
 	Token string
 	Email string
@@ -23,14 +28,26 @@ func GetActiveSessions() *Sessions {
 	return ActiveSessions
 }
 
+func Encode(email string) string {
+	h := sha1.New()
+	h.Write([]byte(email))
+
+	// Convierto el hash a base64
+	return base64.URLEncoding.EncodeToString(h.Sum(nil))
+}
+
 func Get(token string) *Session {
 	sessions := GetActiveSessions()
 	return (*sessions)[token]
 }
 
-func (s *Session) Add() {
+func (s *Session) Add() string {
+	token := Encode(s.Email)
+
 	sessions := GetActiveSessions()
-	(*sessions)[s.Token] = s
+	(*sessions)[token] = s
+
+	return token
 }
 
 func (s *Session) Remove() {
