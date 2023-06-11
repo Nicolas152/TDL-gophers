@@ -27,6 +27,11 @@ func HandlerLogIn(w http.ResponseWriter, r *http.Request) {
 	log.Println("LogIn")
 	HandlerUserAuthentication(w, r, &userCredentials)
 
+	// check if userCredenttials is nil
+	if userCredentials.Email == nil {
+		return
+	}
+
 	// Agrero el token de sesion
 	userSession := session.Session{Email: *userCredentials.Email, Token: "123456789"}
 	userSession.Add()
@@ -43,7 +48,7 @@ func HandlerAccess(w http.ResponseWriter, r *http.Request) *user.User {
 	// Resuelvo el email del usuario
 	userModel := user.User{Email: (*userSession).Email}
 	if err := userModel.GetContext(); err != nil {
-		http.Error(w, "Could not authenticate user. Reason: " + err.Error(), http.StatusBadRequest)
+		http.Error(w, "Could not authenticate user. Reason: "+err.Error(), http.StatusBadRequest)
 		return nil
 	}
 
@@ -59,7 +64,7 @@ func HandlerUserAuthentication(w http.ResponseWriter, r *http.Request, userCrede
 
 	// Autentico al usuario
 	if err := userCredentials.Authenticate(); err != nil {
-		http.Error(w, "Could not authenticate user. Reason: " + err.Error(), http.StatusBadRequest)
+		http.Error(w, "Could not authenticate user. Reason: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 }
