@@ -2,21 +2,19 @@ package controllers
 
 import (
 	"encoding/json"
-	"log"
+	"errors"
 	"net/http"
-	"time"
 
 	authDTO "gochat/src/controllers/DTOs/auth"
 	"gochat/src/controllers/authentication/authMiddleware"
 	"gochat/src/models/user"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 )
 
 func AddAuthJWTController(myRouter *mux.Router) {
 	// Handler of signin
-	myRouter.HandleFunc("/gophers/signin", func(w http.ResponseWriter, r *http.Request) {
+	myRouter.HandleFunc("/gophers/signinJWT", func(w http.ResponseWriter, r *http.Request) {
 		HandlerSignIn(w, r)
 	})
 
@@ -37,7 +35,7 @@ func HandlerLogIn(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
-	tokenString, err := generateJWT(userModel.Email)
+	tokenString, err := authMiddleware.GenerateJWT(userModel.Email)
 	if err != nil {
 		http.Error(w, "Failed to generate JWT", http.StatusInternalServerError)
 		return
@@ -47,25 +45,32 @@ func HandlerLogIn(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func generateJWT(email string) (string, error) {
-	expirationTime := time.Now().Add(time.Hour) // Token expires in 1 hour
-	claims := &authMiddleware.JWTClaims{
-		Email: email,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
-		},
+func HandlerSignIn(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var signinDTO authDTO.SignInDTO
+	_ = json.NewDecoder(r.Body).Decode(&signinDTO)
+
+	// Validate sign in data is not empty
+	if err := validateSignInData(&signinDTO); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	secetKey := []byte("super-secretKey") // TODO: move to config file
-	tokenString, err := token.SignedString(secetKey)
-	if err != nil {
-		// log detail of error
-		log.Println("Error generating JWT: " + err.Error())
-		return "", err
+
+	userModel := user.User{Email: signinDTO.Email, Password: signinDTO.Password, Name: signinDTO.Name}
+	if err := userModel.Create(); err != nil {
+		http.Error(w, "Failed to create user:"+err.Error(), http.StatusInternalServerError)
+		return
 	}
-	return tokenString, nil
+	w.WriteHeader(http.StatusCreated)
+	response := map[string]string{"message": "User created successfully"}
+	json.NewEncoder(w).Encode(response)
+	return
 }
 
-func HandlerSignIn(w http.ResponseWriter, r *http.Request) {
-	panic("unimplemented")
+func validateSignInData(signinDTO *authDTO.SignInDTO) error {
+	// Validate sign in data is not empty
+	if signinDTO.Email == "" || signinDTO.Password == "" || signinDTO.Name == "" {
+		return errors.New("invalid data")
+	}
+	return nil
 }

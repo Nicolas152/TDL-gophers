@@ -6,8 +6,8 @@ type LoginDTO struct {
 	Password string `json:"password"`
 }
 
-// SignupDTO represents the structure of a signup request
-type SignupDTO struct {
+// SignInDTO represents the structure of a signup request
+type SignInDTO struct {
 	Email    string `json:"email"`
 	Name     string `json:"name"`
 	Password string `json:"password"`

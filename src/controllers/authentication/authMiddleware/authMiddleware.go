@@ -2,8 +2,10 @@ package authMiddleware
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 )
@@ -46,4 +48,23 @@ func getJWTFromHeader(r *http.Request) string {
 	authHeader := r.Header.Get("Authorization")
 	tokenString := strings.TrimPrefix(authHeader, prefix)
 	return tokenString
+}
+
+func GenerateJWT(email string) (string, error) {
+	expirationTime := time.Now().Add(24 * time.Hour) // Token expires in 24 hours
+	claims := JWTClaims{
+		Email: email,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	secetKey := []byte("super-secretKey") // TODO: move to config file
+	tokenString, err := token.SignedString(secetKey)
+	if err != nil {
+		// log detail of error
+		log.Println("Error generating JWT: " + err.Error())
+		return "", err
+	}
+	return tokenString, nil
 }
