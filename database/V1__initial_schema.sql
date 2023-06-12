@@ -1,3 +1,9 @@
+-- Crear la base de datos
+CREATE DATABASE IF NOT EXISTS gochat;
+
+-- Usar la base de datos
+USE gochat;
+
 DROP TABLE IF EXISTS `messages`;
 DROP TABLE IF EXISTS `chats`;
 DROP TABLE IF EXISTS `channels`;
@@ -69,15 +75,29 @@ CREATE TABLE IF NOT EXISTS `chats` (
     CONSTRAINT `chats_fk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+-- Creo tabla de relaciones entre usuarios y chat
+CREATE TABLE IF NOT EXISTS `user_chat` (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    chat_id INT NOT NULL,
+    UNIQUE KEY `user_chat_unique` (`user_id`, `chat_id`),
+    KEY `user_id` (`user_id`),
+    KEY `chat_id` (`chat_id`),
+    CONSTRAINT `user_chat_fk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `user_chat_fk_2` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
 -- Creo la tabla de Messages
 CREATE TABLE IF NOT EXISTS `messages` (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
     chat_id INT NOT NULL,
     message VARCHAR(256) NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    KEY `channel_id` (`channel_id`),
+    KEY `chat_id` (`chat_id`),
     KEY `user_id` (`user_id`),
-    CONSTRAINT `messages_fk_1` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `messages_fk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `messages_fk_2` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 

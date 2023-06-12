@@ -2,6 +2,7 @@ package user
 
 import (
 	"errors"
+	"fmt"
 	"gochat/src/connections/database"
 )
 
@@ -57,7 +58,6 @@ func Get() []User {
 
 }
 
-
 // Manejo de usuarios
 
 func (user User) Authenticate() bool {
@@ -102,12 +102,17 @@ func (user User) Create() error {
 	conn := database.GetConnection()
 	defer conn.Close()
 
-	stmt, _ := (*conn).Prepare("INSERT INTO users(email, name, password) VALUES(?, ?, ?)")
-	_, err := stmt.Exec(user.Email, user.Name, user.Password)
+	stmt, err := (*conn).Prepare("INSERT INTO users(email, name, password) VALUES(?, ?, ?)")
+	// handle error
+	if err != nil {
+		errMsg := fmt.Sprintf("error preparing query: %v", err)
+		return errors.New(errMsg)
+	}
+
+	_, err = stmt.Exec(user.Email, user.Name, user.Password)
 	if err != nil {
 		return errors.New("User already exists")
 	}
 
 	return nil
 }
-
