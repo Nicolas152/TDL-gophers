@@ -11,6 +11,9 @@ import (
 func AddRoutes(myRouter *mux.Router) {
 	controllers.AddAuthenticationsController(myRouter)
 	controllers.AddWorkspaceController(myRouter)
+
+	controllers.AddAuthJWTController(myRouter)
+	// controllers.AddChannelController(myRouter)
 }
 
 func main() {
