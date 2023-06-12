@@ -1,6 +1,8 @@
 package workspace
 
 import (
+	"database/sql"
+	"errors"
 	"gochat/src/connections/database"
 	"gochat/src/helpers/common"
 	"gochat/src/models/relationship"
@@ -14,16 +16,16 @@ type WorkspaceInterface interface {
 
 	IsPublic() bool
 	Authenticate() bool
+	Exists() (bool, error)
 }
 
 type Workspace struct {
-	Id 				int
-	WorkflowKey 	string
-	Name 			string
-	Password 		string
-	Creator 		int
+	Id          int
+	WorkflowKey string
+	Name        string
+	Password    string
+	Creator     int
 }
-
 
 func GetWorkspaceByKey(key string) (Workspace, error) {
 	conn := database.GetConnection()
@@ -117,4 +119,29 @@ func (workspace Workspace) IsPublic() bool {
 
 func (workspace Workspace) Authenticate(newWorkspace Workspace) bool {
 	return workspace.Password == newWorkspace.Password
+}
+
+func (workspace Workspace) Exists() (bool, error) {
+	ws, err := GetWorkspaceByKey(workspace.WorkflowKey)
+	return ws.Id > 0, err
+}
+
+func (workspace Workspace) HasMember(userId int) (bool, error) {
+	conn := database.GetConnection()
+	defer conn.Close()
+
+	// print userId, workspace.Id
+	println(userId, workspace.Id)
+
+	result := (*conn).QueryRow("SELECT id FROM user_workspace WHERE user_id = ? AND workspace_id = ?", userId, workspace.Id)
+
+	var id int
+	err := result.Scan(&id)
+
+	// Dont return error if no rows found
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return false, err
+	}
+
+	return id > 0, nil
 }

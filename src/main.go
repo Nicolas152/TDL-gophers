@@ -13,7 +13,7 @@ func AddRoutes(myRouter *mux.Router) {
 	controllers.AddWorkspaceController(myRouter)
 
 	controllers.AddAuthJWTController(myRouter)
-	// controllers.AddChannelController(myRouter)
+	controllers.AddChannelController(myRouter)
 }
 
 func main() {
