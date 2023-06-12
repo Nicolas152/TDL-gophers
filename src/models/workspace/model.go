@@ -17,6 +17,7 @@ type WorkspaceInterface interface {
 	IsPublic() bool
 	Authenticate() bool
 	Exists() (bool, error)
+	HasMember() (bool, error)
 }
 
 type Workspace struct {
