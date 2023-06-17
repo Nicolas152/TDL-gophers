@@ -35,7 +35,9 @@ func HandlerLogIn(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
-	tokenString, err := authMiddleware.GenerateJWT(userModel.Email)
+	_ = userModel.GetContext()
+
+	tokenString, err := authMiddleware.GenerateJWT(userModel.Email, userModel.Id)
 	if err != nil {
 		http.Error(w, "Failed to generate JWT", http.StatusInternalServerError)
 		return

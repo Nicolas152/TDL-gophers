@@ -12,6 +12,7 @@ import (
 
 type JWTClaims struct {
 	Email string `json:"email"`
+	Id    int    `json:"id"`
 	jwt.StandardClaims
 }
 
@@ -50,10 +51,11 @@ func getJWTFromHeader(r *http.Request) string {
 	return tokenString
 }
 
-func GenerateJWT(email string) (string, error) {
+func GenerateJWT(email string, id int) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour) // Token expires in 24 hours
 	claims := JWTClaims{
 		Email: email,
+		Id:    id,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
