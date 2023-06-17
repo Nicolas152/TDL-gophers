@@ -40,7 +40,7 @@ func HandlerLogIn(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to generate JWT", http.StatusInternalServerError)
 		return
 	}
-	response := map[string]string{"token": tokenString}
+	response := map[string]string{"access_token": tokenString}
 	json.NewEncoder(w).Encode(response)
 	return
 }
