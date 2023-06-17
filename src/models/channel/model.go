@@ -3,6 +3,7 @@ package channel
 import (
 	"database/sql"
 	"gochat/src/connections/database"
+	"gochat/src/models/channel/userChannelRelationship"
 )
 
 type ChannelInterface interface {
@@ -19,7 +20,7 @@ type ChannelInterface interface {
 
 type Channel struct {
 	Id          int
-	WorkspaceId string
+	WorkspaceId int
 	Name        string
 	Password    string
 	Creator     int
@@ -57,4 +58,29 @@ func GetChannelsByWorkspaceId(workspaceId int) ([]Channel, error) {
 		}
 	}
 	return channels, nil
+}
+
+func (channel Channel) Create() error {
+
+	conn := database.GetConnection()
+	defer conn.Close()
+
+	query := `
+	INSERT INTO channels (workspace_id, name, password, creator) 
+	VALUES (?, ?, ?, ?)`
+
+	res, err := (*conn).Exec(query, channel.WorkspaceId, channel.Name, channel.Password, channel.Creator)
+
+	if err != nil {
+		return err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	// create channel member
+	relationship := userChannelRelationship.UserChannelRelationship{UserId: channel.Creator, ChannelId: int(id)}
+	return relationship.Create()
 }

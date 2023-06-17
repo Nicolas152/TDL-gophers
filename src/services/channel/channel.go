@@ -5,7 +5,6 @@ import (
 	"errors"
 	"gochat/src/controllers/authentication/userContext"
 	"gochat/src/models/channel"
-	"gochat/src/models/user"
 	"gochat/src/models/workspace"
 	"net/http"
 )
@@ -47,19 +46,33 @@ func getChannelValidations(workspaceModel workspace.Workspace, userContext *user
 		return errors.New("Workspace does not exists"), http.StatusBadRequest
 	}
 
-	// get userId by email
-	userModel := user.User{Email: (*userContext).Email}
-	if err := userModel.GetContext(); err != nil {
-		return errors.New("Error getting user: " + err.Error()), http.StatusInternalServerError
-	}
-
 	// validate if user is member of workspace
-	exists, err2 := workspaceModel.HasMember(userModel.Id)
+	exists, err2 := workspaceModel.HasMember(userContext.Id)
 	if err2 != nil {
 		return errors.New("Error validating if user is member of workspace: " + err2.Error()), http.StatusInternalServerError
 	}
 	if !exists {
 		return errors.New("User is not member of workspace"), http.StatusUnauthorized
+	}
+
+	return nil, 0
+}
+
+func CreateChannel(name string, password string, workspaceKey string, userContext *userContext.UserContext) (error, int) {
+
+	// validate if workspaceModel exists
+	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
+	if err != nil {
+		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
+	}
+
+	if err, statusErr := getChannelValidations(workspaceModel, userContext); err != nil {
+		return err, statusErr
+	}
+	// create channel
+	channelModel := channel.Channel{Name: name, Password: password, WorkspaceId: workspaceModel.Id, Creator: userContext.Id}
+	if err := channelModel.Create(); err != nil {
+		return errors.New("Error creating channel: " + err.Error()), http.StatusInternalServerError
 	}
 
 	return nil, 0
