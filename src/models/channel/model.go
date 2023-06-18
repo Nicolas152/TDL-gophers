@@ -7,7 +7,7 @@ import (
 )
 
 type ChannelInterface interface {
-	Get() Channel
+	Get() (Channel, error)
 	Create() error
 	Update() error
 	Delete() error
@@ -24,6 +24,29 @@ type Channel struct {
 	Name        string
 	Password    string
 	Creator     int
+}
+
+func (channel Channel) Get() (Channel, error) {
+
+	conn := database.GetConnection()
+	defer conn.Close()
+
+	query := `
+	SELECT id, workspace_id, name, password, creator 
+	FROM channels 
+	WHERE id = ? AND workspace_id = ?`
+
+	var password sql.NullString
+	if err := (*conn).QueryRow(query, channel.Id, channel.WorkspaceId).Scan(&channel.Id, &channel.WorkspaceId, &channel.Name, &password, &channel.Creator); err != nil {
+		return channel, err
+	}
+
+	// Handle null password
+	if password.Valid {
+		channel.Password = password.String
+	}
+
+	return channel, nil
 }
 
 func GetChannelsByWorkspaceId(workspaceId int) ([]Channel, error) {
@@ -83,4 +106,27 @@ func (channel Channel) Create() error {
 	// create channel member
 	relationship := userChannelRelationship.UserChannelRelationship{UserId: channel.Creator, ChannelId: int(id)}
 	return relationship.Create()
+}
+
+func (channel Channel) Update() error {
+
+	conn := database.GetConnection()
+	defer conn.Close()
+
+	query := `
+	UPDATE channels 
+	SET name = ?, password = ? 
+	WHERE id = ?`
+
+	_, err := (*conn).Exec(query, channel.Name, channel.Password, channel.Id)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (channel Channel) IsOwner(userId int) bool {
+	return channel.Creator == userId
 }

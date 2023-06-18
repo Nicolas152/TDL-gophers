@@ -77,3 +77,36 @@ func CreateChannel(name string, password string, workspaceKey string, userContex
 
 	return nil, 0
 }
+
+func UpdateChannel(id int, name string, password string, workspaceKey string, userContext *userContext.UserContext) (error, int) {
+
+	// validate if workspaceModel exists
+	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
+	if err != nil {
+		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
+	}
+
+	if err, statusErr := getChannelValidations(workspaceModel, userContext); err != nil {
+		return err, statusErr
+	}
+
+	channelModel := channel.Channel{WorkspaceId: workspaceModel.Id, Id: id}
+	channelModel, err = channelModel.Get()
+	if err != nil {
+		return errors.New("Could not update Channel. Reason:" + err.Error()), http.StatusBadRequest
+	}
+
+	// check if user is the creator of the channel
+	if !channelModel.IsOwner(userContext.Id) {
+		return errors.New("User is not owner of channel"), http.StatusUnauthorized
+	}
+
+	// update channel
+	channelModel.Name = name
+	channelModel.Password = password
+	if err := channelModel.Update(); err != nil {
+		return errors.New("Error updating channel: " + err.Error()), http.StatusInternalServerError
+	}
+
+	return nil, 0
+}

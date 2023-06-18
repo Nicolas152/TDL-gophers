@@ -7,6 +7,7 @@ import (
 	"gochat/src/controllers/authentication/userContext"
 	"gochat/src/services/channel"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -14,10 +15,10 @@ import (
 func AddChannelController(myRouter *mux.Router) {
 	// Get channels by workspace
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel", authMiddleware.VerifyTokenMiddleware(getChannelsByWorkspace)).Methods("GET")
-	// myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/id", authMiddleware.VerifyTokenMiddleware(getChannelsByWorkspace)).Methods("GET")
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel", authMiddleware.VerifyTokenMiddleware(createChannel)).Methods("POST")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}", authMiddleware.VerifyTokenMiddleware(updateChannel)).Methods("PUT")
+	// myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{channelKey}", authMiddleware.VerifyTokenMiddleware(deleteChannel)).Methods("DELETE")
 
-	// myRouter.HandleFunc("/gophers/channels/{}", authMiddleware.VerifyTokenMiddleware(getChannelByKey)).Methods("GET")
 }
 
 func getChannelsByWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -66,6 +67,30 @@ func createChannel(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Channel created successfully"))
 }
 
-// func getChannelByKey(w http.ResponseWriter, r *http.Request) {
-// 	w.Write([]byte("Get Channel by Key"))
-// }
+func updateChannel(w http.ResponseWriter, r *http.Request) {
+
+	// get user context
+	userContext := userContext.GetUserContext(r)
+
+	// get workspaceKey from URL
+	vars := mux.Vars(r)
+	workspaceKey := vars["workspaceKey"]
+	channelId, _ := strconv.Atoi(vars["id"])
+
+	var channelDTO channelDTO.ChannelDTO
+	_ = json.NewDecoder(r.Body).Decode(&channelDTO)
+
+	if channelDTO.Name == "" {
+		http.Error(w, "Channel name is required", http.StatusBadRequest)
+		return
+	}
+
+	err, statusErr := channel.UpdateChannel(int(channelId), channelDTO.Name, channelDTO.Password, workspaceKey, userContext)
+
+	if err != nil {
+		http.Error(w, err.Error(), statusErr)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Channel updated successfully"))
+}
