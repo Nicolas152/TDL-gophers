@@ -26,6 +26,14 @@ type Channel struct {
 	Creator     int
 }
 
+// Channel Model to be returned to client
+type ClientChannel struct {
+	Id          string
+	Name        string
+	WorkspaceId int
+	Creator     int
+}
+
 func (channel Channel) Get() (Channel, error) {
 
 	conn := database.GetConnection()
@@ -49,15 +57,15 @@ func (channel Channel) Get() (Channel, error) {
 	return channel, nil
 }
 
-func GetChannelsByWorkspaceId(workspaceId int) ([]Channel, error) {
+func GetChannelsByWorkspaceId(workspaceId int) ([]ClientChannel, error) {
 
-	channels := make([]Channel, 0)
+	channels := make([]ClientChannel, 0)
 
 	conn := database.GetConnection()
 	defer conn.Close()
 
 	query := `
-	SELECT id, workspace_id, name, password, creator 
+	SELECT id, workspace_id, name, creator 
 	FROM channels 
 	WHERE workspace_id = ?`
 
@@ -68,13 +76,8 @@ func GetChannelsByWorkspaceId(workspaceId int) ([]Channel, error) {
 	}
 
 	for results.Next() {
-		var channel Channel
-		var password sql.NullString
-		if err := results.Scan(&channel.Id, &channel.WorkspaceId, &channel.Name, &password, &channel.Creator); err == nil {
-			// Handle null password
-			if password.Valid {
-				channel.Password = password.String
-			}
+		var channel ClientChannel
+		if err := results.Scan(&channel.Id, &channel.WorkspaceId, &channel.Name, &channel.Creator); err == nil {
 			channels = append(channels, channel)
 		} else {
 			println(err.Error())
