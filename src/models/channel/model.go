@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"gochat/src/connections/database"
 	"gochat/src/models/channel/userChannelRelationship"
+	"gochat/src/models/user"
 )
 
 type ChannelInterface interface {
@@ -153,4 +154,14 @@ func (channel Channel) Delete() error {
 func (channel Channel) Join(userId int) error {
 	relationship := userChannelRelationship.UserChannelRelationship{UserId: userId, ChannelId: channel.Id}
 	return relationship.Create()
+}
+
+func (channel Channel) IsMember(userId int) bool {
+	relationship := userChannelRelationship.UserChannelRelationship{UserId: userId, ChannelId: channel.Id}
+	return relationship.Exists()
+}
+
+func (channel Channel) GetMembers() ([]user.UserClient, error) {
+	relationship := userChannelRelationship.UserChannelRelationship{ChannelId: channel.Id}
+	return relationship.GetMembers()
 }

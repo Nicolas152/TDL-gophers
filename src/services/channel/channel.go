@@ -26,10 +26,6 @@ func GetChannelsByWorkspace(workspaceKey string, userContext *userContext.UserCo
 		return nil, errors.New("Error getting channels: " + err.Error()), http.StatusInternalServerError
 	}
 
-	// print channels
-	for _, channel := range channels {
-		println(channel.Id, channel.Name)
-	}
 	channelsJson, err := json.Marshal(channels)
 	if err != nil {
 		return nil, errors.New("Error marshalling channels: " + err.Error()), http.StatusInternalServerError
@@ -171,4 +167,41 @@ func JoinToChannel(id int, password string, workspaceKey string, userContext *us
 	}
 
 	return nil, 0
+}
+
+func MembersOfChannel(id int, workspaceKey string, userContext *userContext.UserContext) ([]byte, error, int) {
+
+	// validate if workspaceModel exists
+	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
+	if err != nil {
+		return nil, errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
+	}
+
+	if err, statusErr := channelValidations(workspaceModel, userContext); err != nil {
+		return nil, err, statusErr
+	}
+
+	channelModel := channel.Channel{WorkspaceId: workspaceModel.Id, Id: id}
+	channelModel, err = channelModel.Get()
+	if err != nil {
+		return nil, errors.New("Could not get members of Channel. Reason:" + err.Error()), http.StatusBadRequest
+	}
+
+	// only members of private channels can see its members
+	// public channels are visible to everyone in the workspace
+	if !channelModel.IsMember(userContext.Id) && channelModel.Password != "" {
+		return nil, errors.New("User is not member of this private channel"), http.StatusUnauthorized
+	}
+
+	members, err := channelModel.GetMembers()
+	if err != nil {
+		return nil, errors.New("Error getting members of channel: " + err.Error()), http.StatusInternalServerError
+	}
+
+	membersJson, err := json.Marshal(members)
+	if err != nil {
+		return nil, errors.New("Error marshalling members: " + err.Error()), http.StatusInternalServerError
+	}
+
+	return membersJson, nil, 0
 }
