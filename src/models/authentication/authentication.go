@@ -8,7 +8,6 @@ type AuthenticationType string
 const (
 	SignIn 	AuthenticationType = "SignIn"
 	LogIn 	AuthenticationType = "LogIn"
-	Access 	AuthenticationType = "Access"
 )
 
 type AuthenticationInterface interface {
@@ -16,7 +15,6 @@ type AuthenticationInterface interface {
 
 	SignIn() error
 	LogIn() error
-	Access() error
 }
 
 type UserCredentials struct {
@@ -44,8 +42,6 @@ func (credentials *UserCredentials) Authenticate() error {
 		return credentials.SignIn()
 	case LogIn:
 		return credentials.LogIn()
-	case Access:
-		return credentials.Access()
 	default:
 		return errors.New("Invalid authentication type")
 	}
@@ -76,15 +72,6 @@ func (credentials *UserCredentials) LogIn() error {
 	userModel := user.User{Email: *credentials.Email, Password: *credentials.Password}
 	if authenticated := userModel.Authenticate(); !authenticated {
 		return errors.New("Invalid email or password")
-	}
-
-	return nil
-}
-
-func (credentials *UserCredentials) Access() error {
-	// Valido las credenciales del usuario
-	if credentials.Email == nil {
-		return errors.New("Email is required to access to GoChat")
 	}
 
 	return nil

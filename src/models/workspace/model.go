@@ -6,6 +6,7 @@ import (
 	"gochat/src/connections/database"
 	"gochat/src/helpers/common"
 	"gochat/src/models/relationship"
+	"strings"
 )
 
 type WorkspaceInterface interface {
@@ -20,12 +21,19 @@ type WorkspaceInterface interface {
 	HasMember() (bool, error)
 }
 
+// Modelo workspace usado para el cliente
+type ClientWorkspace struct {
+	WorkspaceKey 	string
+	Name 	   	 	string
+}
+
+// Modelo workspace usado para el servidor
 type Workspace struct {
-	Id          int
-	WorkflowKey string
-	Name        string
-	Password    string
-	Creator     int
+	Id          	int
+	WorkspaceKey 	string
+	Name        	string
+	Password    	string
+	Creator     	int
 }
 
 func GetWorkspaceByKey(key string) (Workspace, error) {
@@ -39,29 +47,32 @@ func GetWorkspaceByKey(key string) (Workspace, error) {
 	var creator int
 	var password string
 
-	err := result.Scan(&id, &name, &creator, &password)
-	if err != nil {
+	if err := result.Scan(&id, &name, &creator, &password); err != nil {
+		if err == sql.ErrNoRows {
+			return Workspace{}, errors.New("Workspace not found")
+		}
+
 		return Workspace{}, err
 	}
 
 	return Workspace{id, key, name, password, creator}, nil
 }
 
-func Get() []Workspace {
-	workspaces := make([]Workspace, 0)
+func Get(userId int) ([]ClientWorkspace, error) {
+	workspaces := make([]ClientWorkspace, 0)
 
 	conn := database.GetConnection()
 	defer conn.Close()
 
-	results, _ := (*conn).Query("SELECT workflow_key, name, password FROM workspaces")
+	results, _ := (*conn).Query("SELECT workflow_key, name FROM workspaces INNER JOIN user_workspace ON workspaces.id = user_workspace.workspace_id WHERE user_workspace.user_id = ?", userId)
 
 	for results.Next() {
-		var workspace Workspace
-		results.Scan(&workspace.WorkflowKey, &workspace.Name, &workspace.Password)
+		var workspace ClientWorkspace
+		results.Scan(&workspace.WorkspaceKey, &workspace.Name)
 		workspaces = append(workspaces, workspace)
 	}
 
-	return workspaces
+	return workspaces, nil
 }
 
 // Manejo de workspaces
@@ -70,6 +81,11 @@ func (workspace Workspace) GetId() int {
 }
 
 func (workspace Workspace) Create(userId int) error {
+	// Valido que el workspace no exista
+	if exist, _ := workspace.Exists(); !exist {
+		return errors.New("Workspace already exists")
+	}
+
 	conn := database.GetConnection()
 	defer conn.Close()
 
@@ -91,10 +107,34 @@ func (workspace Workspace) Create(userId int) error {
 }
 
 func (workspace Workspace) Update(userId int, newWorkspace Workspace) error {
+	fields, values := []string{}, []interface{}{}
+	// Obtengo los parametros a actualizar
+	name, password := newWorkspace.Name, newWorkspace.Password
+
+	if name != "" {
+		fields = append(fields, "name = ?")
+		values = append(values, name)
+	}
+
+	if password != "" {
+		fields = append(fields, "password = ?")
+		values = append(values, password)
+	}
+
+	if len(fields) == 0 {
+		return errors.New("No fields to update")
+	}
+
+	// Agrego el workspace key
+	values = append(values, workspace.WorkspaceKey)
+
 	conn := database.GetConnection()
 	defer conn.Close()
 
-	_, err := (*conn).Exec("UPDATE workspaces SET name = ?, password = ? WHERE workflow_key = ?", newWorkspace.Name, newWorkspace.Password, workspace.WorkflowKey)
+	_, err := (*conn).Exec(
+		"UPDATE workspaces SET " + strings.Join(fields, ", ") + " WHERE workflow_key = ?",
+		values...
+	)
 	if err != nil {
 		return err
 	}
@@ -106,7 +146,7 @@ func (workspace Workspace) Delete(userId int) error {
 	conn := database.GetConnection()
 	defer conn.Close()
 
-	_, err := (*conn).Exec("DELETE FROM workspaces WHERE workflow_key = ?", workspace.WorkflowKey)
+	_, err := (*conn).Exec("DELETE FROM workspaces WHERE workflow_key = ?", workspace.WorkspaceKey)
 	if err != nil {
 		return err
 	}
@@ -118,12 +158,16 @@ func (workspace Workspace) IsPublic() bool {
 	return workspace.Password == ""
 }
 
+func (workspace Workspace) IsOwner(userId int) bool {
+	return workspace.Creator == userId
+}
+
 func (workspace Workspace) Authenticate(newWorkspace Workspace) bool {
 	return workspace.Password == newWorkspace.Password
 }
 
 func (workspace Workspace) Exists() (bool, error) {
-	ws, err := GetWorkspaceByKey(workspace.WorkflowKey)
+	ws, err := GetWorkspaceByKey(workspace.WorkspaceKey)
 	return ws.Id > 0, err
 }
 

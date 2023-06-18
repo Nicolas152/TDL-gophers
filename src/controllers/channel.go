@@ -2,9 +2,8 @@ package controllers
 
 import (
 	"errors"
-	"gochat/src/controllers/authentication/authMiddleware"
-	"gochat/src/controllers/authentication/userContext"
-	"gochat/src/models/user"
+	"gochat/src/middlewares"
+	"gochat/src/models/request"
 	"gochat/src/models/workspace"
 	"net/http"
 
@@ -13,27 +12,29 @@ import (
 
 func AddChannelController(myRouter *mux.Router) {
 	// Get channels by workspace
-	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channels", authMiddleware.VerifyTokenMiddleware(getChannelsByWorkspace)).Methods("GET")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channels", middlewares.AuthenticationMiddleware(getChannelsByWorkspace)).Methods("GET")
 
-	//myRouter.HandleFunc("/gophers/channels/{channelKey}", authMiddleware.VerifyTokenMiddleware(getChannelByKey)).Methods("GET")
+	//myRouter.HandleFunc("/gophers/channels/{channelKey}", authMiddleware.AuthenticationMiddleware(getChannelByKey)).Methods("GET")
 }
 
 func getChannelsByWorkspace(w http.ResponseWriter, r *http.Request) {
-
-	// get user context
-	userContext := userContext.GetUserContext(r)
+	var userRequest request.UserRequest
+	if err := userRequest.ReadRequest(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	// get workspaceKey from URL
 	vars := mux.Vars(r)
 	workspaceKey := vars["workspaceKey"]
 
-	if err, statusErr := getChannelValidations(workspaceKey, userContext); err != nil {
+	if err, statusErr := getChannelValidations(workspaceKey, userRequest.GetUserId()); err != nil {
 		http.Error(w, err.Error(), statusErr)
 		return
 	}
 
 	// get channels by workspace
-	println("Get Channels by Workspace", workspaceKey, (*userContext).Email)
+	println("Get Channels by Workspace", workspaceKey, userRequest.GetUserId())
 
 	w.Write([]byte("Get Channels"))
 }
@@ -41,7 +42,7 @@ func getChannelsByWorkspace(w http.ResponseWriter, r *http.Request) {
 // TODO: @Lescalante14 move this to a service
 // getChannelValidations performs validations to determine if the user has access to the workspace.
 // It returns an error and a corresponding HTTP status code based on the validation results.
-func getChannelValidations(workspaceKey string, userContext *userContext.UserContext) (error, int) {
+func getChannelValidations(workspaceKey string, userId int) (error, int) {
 	// validate if workspaceModel exists
 	// workspaceModel := workspace.Workspace{WorkflowKey: workspaceKey}
 	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
@@ -52,14 +53,8 @@ func getChannelValidations(workspaceKey string, userContext *userContext.UserCon
 		return errors.New("Workspace does not exists"), http.StatusBadRequest
 	}
 
-	// get userId by email
-	userModel := user.User{Email: userContext.Email}
-	if err := userModel.GetContext(); err != nil {
-		return errors.New("Error getting user: " + err.Error()), http.StatusInternalServerError
-	}
-
 	// validate if user is member of workspace
-	exists, err2 := workspaceModel.HasMember(userModel.Id)
+	exists, err2 := workspaceModel.HasMember(userId)
 	if err2 != nil {
 		return errors.New("Error validating if user is member of workspace: " + err2.Error()), http.StatusInternalServerError
 	}
