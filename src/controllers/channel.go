@@ -17,7 +17,7 @@ func AddChannelController(myRouter *mux.Router) {
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel", authMiddleware.VerifyTokenMiddleware(getChannelsByWorkspace)).Methods("GET")
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel", authMiddleware.VerifyTokenMiddleware(createChannel)).Methods("POST")
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}", authMiddleware.VerifyTokenMiddleware(updateChannel)).Methods("PUT")
-	// myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{channelKey}", authMiddleware.VerifyTokenMiddleware(deleteChannel)).Methods("DELETE")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}", authMiddleware.VerifyTokenMiddleware(deleteChannel)).Methods("DELETE")
 
 }
 
@@ -85,7 +85,7 @@ func updateChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err, statusErr := channel.UpdateChannel(int(channelId), channelDTO.Name, channelDTO.Password, workspaceKey, userContext)
+	err, statusErr := channel.UpdateChannel(channelId, channelDTO.Name, channelDTO.Password, workspaceKey, userContext)
 
 	if err != nil {
 		http.Error(w, err.Error(), statusErr)
@@ -93,4 +93,24 @@ func updateChannel(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Channel updated successfully"))
+}
+
+func deleteChannel(w http.ResponseWriter, r *http.Request) {
+
+	// get user context
+	userContext := userContext.GetUserContext(r)
+
+	// get workspaceKey from URL
+	vars := mux.Vars(r)
+	workspaceKey := vars["workspaceKey"]
+	channelId, _ := strconv.Atoi(vars["id"])
+
+	err, statusErr := channel.DeleteChannel(channelId, workspaceKey, userContext)
+
+	if err != nil {
+		http.Error(w, err.Error(), statusErr)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Channel deleted successfully"))
 }

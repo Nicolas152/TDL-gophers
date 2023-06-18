@@ -133,3 +133,19 @@ func (channel Channel) Update() error {
 func (channel Channel) IsOwner(userId int) bool {
 	return channel.Creator == userId
 }
+
+func (channel Channel) Delete() error {
+
+	conn := database.GetConnection()
+	defer conn.Close()
+
+	query := `DELETE FROM channels WHERE id = ?`
+
+	_, err := (*conn).Exec(query, channel.Id)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
