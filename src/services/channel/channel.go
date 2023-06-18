@@ -141,3 +141,34 @@ func DeleteChannel(id int, workspaceKey string, userContext *userContext.UserCon
 
 	return nil, 0
 }
+
+func JoinToChannel(id int, password string, workspaceKey string, userContext *userContext.UserContext) (error, int) {
+
+	// validate if workspaceModel exists
+	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
+	if err != nil {
+		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
+	}
+
+	if err, statusErr := channelValidations(workspaceModel, userContext); err != nil {
+		return err, statusErr
+	}
+
+	channelModel := channel.Channel{WorkspaceId: workspaceModel.Id, Id: id}
+	channelModel, err = channelModel.Get()
+	if err != nil {
+		return errors.New("Could not join Channel. Reason:" + err.Error()), http.StatusBadRequest
+	}
+
+	// check if channel is password protected
+	if channelModel.Password != password {
+		return errors.New("Invalid password"), http.StatusUnauthorized
+	}
+
+	// join channel
+	if err := channelModel.Join(userContext.Id); err != nil {
+		return errors.New("Error joining channel: " + err.Error()), http.StatusInternalServerError
+	}
+
+	return nil, 0
+}

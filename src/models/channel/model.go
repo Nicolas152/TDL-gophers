@@ -149,3 +149,8 @@ func (channel Channel) Delete() error {
 
 	return nil
 }
+
+func (channel Channel) Join(userId int) error {
+	relationship := userChannelRelationship.UserChannelRelationship{UserId: userId, ChannelId: channel.Id}
+	return relationship.Create()
+}

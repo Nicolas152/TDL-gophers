@@ -18,6 +18,7 @@ func AddChannelController(myRouter *mux.Router) {
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel", authMiddleware.VerifyTokenMiddleware(createChannel)).Methods("POST")
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}", authMiddleware.VerifyTokenMiddleware(updateChannel)).Methods("PUT")
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}", authMiddleware.VerifyTokenMiddleware(deleteChannel)).Methods("DELETE")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}/join", authMiddleware.VerifyTokenMiddleware(joinToChannel)).Methods("POST")
 
 }
 
@@ -113,4 +114,27 @@ func deleteChannel(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Channel deleted successfully"))
+}
+
+func joinToChannel(w http.ResponseWriter, r *http.Request) {
+
+	// get user context
+	userContext := userContext.GetUserContext(r)
+
+	// get workspaceKey from URL
+	vars := mux.Vars(r)
+	workspaceKey := vars["workspaceKey"]
+	channelId, _ := strconv.Atoi(vars["id"])
+
+	var channelDTO channelDTO.ChannelDTO
+	_ = json.NewDecoder(r.Body).Decode(&channelDTO)
+
+	err, statusErr := channel.JoinToChannel(channelId, channelDTO.Password, workspaceKey, userContext)
+
+	if err != nil {
+		http.Error(w, err.Error(), statusErr)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Channel joined successfully"))
 }
