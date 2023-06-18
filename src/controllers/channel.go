@@ -19,7 +19,7 @@ func AddChannelController(myRouter *mux.Router) {
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}", authMiddleware.VerifyTokenMiddleware(updateChannel)).Methods("PUT")
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}", authMiddleware.VerifyTokenMiddleware(deleteChannel)).Methods("DELETE")
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}/join", authMiddleware.VerifyTokenMiddleware(joinToChannel)).Methods("POST")
-	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}/members", authMiddleware.VerifyTokenMiddleware(membersOfChannel)).Methods("POST")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}/members", authMiddleware.VerifyTokenMiddleware(membersOfChannel)).Methods("GET")
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}/leave", authMiddleware.VerifyTokenMiddleware(leaveChannel)).Methods("POST")
 
 }
