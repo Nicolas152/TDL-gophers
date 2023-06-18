@@ -27,6 +27,17 @@ func (relationship UserChannelRelationship) Create() error {
 	return nil
 }
 
+func (relationship UserChannelRelationship) Delete() error {
+	conn := database.GetConnection()
+	defer conn.Close()
+
+	_, err := (*conn).Exec("DELETE FROM user_channels WHERE user_id = ? AND channel_id = ?", relationship.UserId, relationship.ChannelId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (relationship UserChannelRelationship) Exists() bool {
 	conn := database.GetConnection()
 	defer conn.Close()

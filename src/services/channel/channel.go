@@ -205,3 +205,29 @@ func MembersOfChannel(id int, workspaceKey string, userContext *userContext.User
 
 	return membersJson, nil, 0
 }
+
+func LeaveChannel(id int, workspaceKey string, userContext *userContext.UserContext) (error, int) {
+
+	// validate if workspaceModel exists
+	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
+	if err != nil {
+		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
+	}
+
+	if err, statusErr := channelValidations(workspaceModel, userContext); err != nil {
+		return err, statusErr
+	}
+
+	channelModel := channel.Channel{WorkspaceId: workspaceModel.Id, Id: id}
+	channelModel, err = channelModel.Get()
+	if err != nil {
+		return errors.New("Could not leave Channel. Reason:" + err.Error()), http.StatusBadRequest
+	}
+
+	// leave channel
+	if err := channelModel.Leave(userContext.Id); err != nil {
+		return errors.New("Error leaving channel: " + err.Error()), http.StatusInternalServerError
+	}
+
+	return nil, 0
+}

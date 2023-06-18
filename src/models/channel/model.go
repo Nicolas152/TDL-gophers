@@ -165,3 +165,8 @@ func (channel Channel) GetMembers() ([]user.UserClient, error) {
 	relationship := userChannelRelationship.UserChannelRelationship{ChannelId: channel.Id}
 	return relationship.GetMembers()
 }
+
+func (channel Channel) Leave(userId int) error {
+	relationship := userChannelRelationship.UserChannelRelationship{UserId: userId, ChannelId: channel.Id}
+	return relationship.Delete()
+}
