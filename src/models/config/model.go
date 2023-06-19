@@ -42,12 +42,14 @@ func GetConfig() *Config {
 	file, err := os.ReadFile("./src/config/local.yaml")
 	if err != nil {
 		log.Printf("Error al leer el archivo de configuracion: %v", err.Error())
+		return cfg
 	}
 
 	// Parseo el archivo de configuracion
 	err = yaml.Unmarshal(file, &cfg)
 	if err != nil {
 		log.Printf("Error al parsear el archivo de configuracion: %v", err)
+		return cfg
 	}
 
 	return cfg

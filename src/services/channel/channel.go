@@ -3,13 +3,12 @@ package channel
 import (
 	"encoding/json"
 	"errors"
-	"gochat/src/controllers/authentication/userContext"
 	"gochat/src/models/channel"
 	"gochat/src/models/workspace"
 	"net/http"
 )
 
-func GetChannelsByWorkspace(workspaceKey string, userContext *userContext.UserContext) ([]byte, error, int) {
+func GetChannelsByWorkspace(workspaceKey string, userId int) ([]byte, error, int) {
 
 	// validate if workspaceModel exists
 	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
@@ -17,7 +16,7 @@ func GetChannelsByWorkspace(workspaceKey string, userContext *userContext.UserCo
 		return nil, errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := channelValidations(workspaceModel, userContext); err != nil {
+	if err, statusErr := channelValidations(workspaceModel, userId); err != nil {
 		return nil, err, statusErr
 	}
 
@@ -36,14 +35,14 @@ func GetChannelsByWorkspace(workspaceKey string, userContext *userContext.UserCo
 
 // channelValidations performs validations to determine if the user has access to the workspace.
 // It returns an error and a corresponding HTTP status code based on the validation results.
-func channelValidations(workspaceModel workspace.Workspace, userContext *userContext.UserContext) (error, int) {
+func channelValidations(workspaceModel workspace.Workspace, userId int) (error, int) {
 
 	if workspaceModel.Id == 0 {
 		return errors.New("Workspace does not exists"), http.StatusBadRequest
 	}
 
 	// validate if user is member of workspace
-	exists, err2 := workspaceModel.HasMember(userContext.Id)
+	exists, err2 := workspaceModel.HasMember(userId)
 	if err2 != nil {
 		return errors.New("Error validating if user is member of workspace: " + err2.Error()), http.StatusInternalServerError
 	}
@@ -54,7 +53,7 @@ func channelValidations(workspaceModel workspace.Workspace, userContext *userCon
 	return nil, 0
 }
 
-func CreateChannel(name string, password string, workspaceKey string, userContext *userContext.UserContext) (error, int) {
+func CreateChannel(name string, password string, workspaceKey string, userId int) (error, int) {
 
 	// validate if workspaceModel exists
 	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
@@ -62,11 +61,11 @@ func CreateChannel(name string, password string, workspaceKey string, userContex
 		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := channelValidations(workspaceModel, userContext); err != nil {
+	if err, statusErr := channelValidations(workspaceModel, userId); err != nil {
 		return err, statusErr
 	}
 	// create channel
-	channelModel := channel.Channel{Name: name, Password: password, WorkspaceId: workspaceModel.Id, Creator: userContext.Id}
+	channelModel := channel.Channel{Name: name, Password: password, WorkspaceId: workspaceModel.Id, Creator: userId}
 	if err := channelModel.Create(); err != nil {
 		return errors.New("Error creating channel: " + err.Error()), http.StatusInternalServerError
 	}
@@ -74,7 +73,7 @@ func CreateChannel(name string, password string, workspaceKey string, userContex
 	return nil, 0
 }
 
-func UpdateChannel(id int, name string, password string, workspaceKey string, userContext *userContext.UserContext) (error, int) {
+func UpdateChannel(id int, name string, password string, workspaceKey string, userId int) (error, int) {
 
 	// validate if workspaceModel exists
 	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
@@ -82,7 +81,7 @@ func UpdateChannel(id int, name string, password string, workspaceKey string, us
 		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := channelValidations(workspaceModel, userContext); err != nil {
+	if err, statusErr := channelValidations(workspaceModel, userId); err != nil {
 		return err, statusErr
 	}
 
@@ -93,7 +92,7 @@ func UpdateChannel(id int, name string, password string, workspaceKey string, us
 	}
 
 	// check if user is the creator of the channel
-	if !channelModel.IsOwner(userContext.Id) {
+	if !channelModel.IsOwner(userId) {
 		return errors.New("User is not owner of channel"), http.StatusUnauthorized
 	}
 
@@ -107,7 +106,7 @@ func UpdateChannel(id int, name string, password string, workspaceKey string, us
 	return nil, 0
 }
 
-func DeleteChannel(id int, workspaceKey string, userContext *userContext.UserContext) (error, int) {
+func DeleteChannel(id int, workspaceKey string, userId int) (error, int) {
 
 	// validate if workspaceModel exists
 	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
@@ -115,7 +114,7 @@ func DeleteChannel(id int, workspaceKey string, userContext *userContext.UserCon
 		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := channelValidations(workspaceModel, userContext); err != nil {
+	if err, statusErr := channelValidations(workspaceModel, userId); err != nil {
 		return err, statusErr
 	}
 
@@ -126,7 +125,7 @@ func DeleteChannel(id int, workspaceKey string, userContext *userContext.UserCon
 	}
 
 	// check if user is the creator of the channel
-	if !channelModel.IsOwner(userContext.Id) {
+	if !channelModel.IsOwner(userId) {
 		return errors.New("User is not owner of channel"), http.StatusUnauthorized
 	}
 
@@ -138,7 +137,7 @@ func DeleteChannel(id int, workspaceKey string, userContext *userContext.UserCon
 	return nil, 0
 }
 
-func JoinToChannel(id int, password string, workspaceKey string, userContext *userContext.UserContext) (error, int) {
+func JoinToChannel(id int, password string, workspaceKey string, userId int) (error, int) {
 
 	// validate if workspaceModel exists
 	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
@@ -146,7 +145,7 @@ func JoinToChannel(id int, password string, workspaceKey string, userContext *us
 		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := channelValidations(workspaceModel, userContext); err != nil {
+	if err, statusErr := channelValidations(workspaceModel, userId); err != nil {
 		return err, statusErr
 	}
 
@@ -162,14 +161,14 @@ func JoinToChannel(id int, password string, workspaceKey string, userContext *us
 	}
 
 	// join channel
-	if err := channelModel.Join(userContext.Id); err != nil {
+	if err := channelModel.Join(userId); err != nil {
 		return errors.New("Error joining channel: " + err.Error()), http.StatusInternalServerError
 	}
 
 	return nil, 0
 }
 
-func MembersOfChannel(id int, workspaceKey string, userContext *userContext.UserContext) ([]byte, error, int) {
+func MembersOfChannel(id int, workspaceKey string, userId int) ([]byte, error, int) {
 
 	// validate if workspaceModel exists
 	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
@@ -177,7 +176,7 @@ func MembersOfChannel(id int, workspaceKey string, userContext *userContext.User
 		return nil, errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := channelValidations(workspaceModel, userContext); err != nil {
+	if err, statusErr := channelValidations(workspaceModel, userId); err != nil {
 		return nil, err, statusErr
 	}
 
@@ -189,7 +188,7 @@ func MembersOfChannel(id int, workspaceKey string, userContext *userContext.User
 
 	// only members of private channels can see its members
 	// public channels are visible to everyone in the workspace
-	if !channelModel.IsMember(userContext.Id) && channelModel.Password != "" {
+	if !channelModel.IsMember(userId) && channelModel.Password != "" {
 		return nil, errors.New("User is not member of this private channel"), http.StatusUnauthorized
 	}
 
@@ -206,7 +205,7 @@ func MembersOfChannel(id int, workspaceKey string, userContext *userContext.User
 	return membersJson, nil, 0
 }
 
-func LeaveChannel(id int, workspaceKey string, userContext *userContext.UserContext) (error, int) {
+func LeaveChannel(id int, workspaceKey string, userId int) (error, int) {
 
 	// validate if workspaceModel exists
 	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
@@ -214,7 +213,7 @@ func LeaveChannel(id int, workspaceKey string, userContext *userContext.UserCont
 		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := channelValidations(workspaceModel, userContext); err != nil {
+	if err, statusErr := channelValidations(workspaceModel, userId); err != nil {
 		return err, statusErr
 	}
 
@@ -225,7 +224,7 @@ func LeaveChannel(id int, workspaceKey string, userContext *userContext.UserCont
 	}
 
 	// leave channel
-	if err := channelModel.Leave(userContext.Id); err != nil {
+	if err := channelModel.Leave(userId); err != nil {
 		return errors.New("Error leaving channel: " + err.Error()), http.StatusInternalServerError
 	}
 

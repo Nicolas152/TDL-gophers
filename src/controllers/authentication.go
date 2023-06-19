@@ -3,10 +3,10 @@ package controllers
 import (
 	"encoding/json"
 	"errors"
+	"gochat/src/helpers/authentication"
 	"net/http"
 
 	authDTO "gochat/src/controllers/DTOs/auth"
-	"gochat/src/controllers/authentication/authMiddleware"
 	"gochat/src/models/user"
 
 	"github.com/gorilla/mux"
@@ -14,12 +14,12 @@ import (
 
 func AddAuthenticationsController(myRouter *mux.Router) {
 	// Handler of signin
-	myRouter.HandleFunc("/gophers/signinJWT", func(w http.ResponseWriter, r *http.Request) {
+	myRouter.HandleFunc("/gophers/signin", func(w http.ResponseWriter, r *http.Request) {
 		HandlerSignIn(w, r)
 	})
 
 	// Handler of login
-	myRouter.HandleFunc("/gophers/loginJWT", func(w http.ResponseWriter, r *http.Request) {
+	myRouter.HandleFunc("/gophers/login", func(w http.ResponseWriter, r *http.Request) {
 		HandlerLogIn(w, r)
 	})
 }
@@ -29,20 +29,29 @@ func HandlerLogIn(w http.ResponseWriter, r *http.Request) {
 	var loginDTO authDTO.LoginDTO
 	_ = json.NewDecoder(r.Body).Decode(&loginDTO)
 
-	// Validate user credentials
+	// Valido las credenciales del usuario
 	userModel := user.User{Email: loginDTO.Email, Password: loginDTO.Password}
 	if authenticated := userModel.Authenticate(); !authenticated {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
-	_ = userModel.GetContext()
 
-	tokenString, err := authMiddleware.GenerateJWT(userModel.Email, userModel.Id)
+	// Obtengo el contexto del usuario
+	err := userModel.GetContext()
+	if err != nil {
+		http.Error(w, "Error with user context: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Genero el token
+	tokenString, err := authentication.CreateJWTHeader(userModel.Id, userModel.Email, userModel.Name)
 	if err != nil {
 		http.Error(w, "Failed to generate JWT", http.StatusInternalServerError)
 		return
 	}
-	response := map[string]string{"token": tokenString}
+
+	// Respondo con el token
+	response := map[string]string{"access_token": tokenString}
 	json.NewEncoder(w).Encode(response)
 	return
 }
@@ -76,5 +85,3 @@ func validateSignInData(signinDTO *authDTO.SignInDTO) error {
 	}
 	return nil
 }
-
-// TODO: responder token por header y pegarle al modelo de auth
