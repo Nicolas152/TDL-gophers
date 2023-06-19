@@ -3,8 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	channelDTO "gochat/src/controllers/DTOs/channel"
-	"gochat/src/controllers/authentication/authMiddleware"
-	"gochat/src/controllers/authentication/userContext"
+	"gochat/src/middlewares"
 	"gochat/src/models/request"
 	"gochat/src/services/channel"
 	"net/http"
@@ -15,13 +14,13 @@ import (
 
 func AddChannelController(myRouter *mux.Router) {
 	// Get channels by workspace
-	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel", authMiddleware.VerifyTokenMiddleware(getChannelsByWorkspace)).Methods("GET")
-	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel", authMiddleware.VerifyTokenMiddleware(createChannel)).Methods("POST")
-	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}", authMiddleware.VerifyTokenMiddleware(updateChannel)).Methods("PUT")
-	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}", authMiddleware.VerifyTokenMiddleware(deleteChannel)).Methods("DELETE")
-	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}/join", authMiddleware.VerifyTokenMiddleware(joinToChannel)).Methods("POST")
-	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}/members", authMiddleware.VerifyTokenMiddleware(membersOfChannel)).Methods("GET")
-	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}/leave", authMiddleware.VerifyTokenMiddleware(leaveChannel)).Methods("POST")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel", middlewares.AuthenticationMiddleware(getChannelsByWorkspace)).Methods("GET")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel", middlewares.AuthenticationMiddleware(createChannel)).Methods("POST")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}", middlewares.AuthenticationMiddleware(updateChannel)).Methods("PUT")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}", middlewares.AuthenticationMiddleware(deleteChannel)).Methods("DELETE")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}/join", middlewares.AuthenticationMiddleware(joinToChannel)).Methods("POST")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}/members", middlewares.AuthenticationMiddleware(membersOfChannel)).Methods("GET")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}/leave", middlewares.AuthenticationMiddleware(leaveChannel)).Methods("POST")
 
 }
 
@@ -36,7 +35,7 @@ func getChannelsByWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	workspaceKey := vars["workspaceKey"]
 
-	channels, err, statusErr := channel.GetChannelsByWorkspace(workspaceKey, userContext)
+	channels, err, statusErr := channel.GetChannelsByWorkspace(workspaceKey, userRequest.GetUserId())
 
 	if err != nil {
 		http.Error(w, err.Error(), statusErr)
@@ -49,7 +48,11 @@ func getChannelsByWorkspace(w http.ResponseWriter, r *http.Request) {
 func createChannel(w http.ResponseWriter, r *http.Request) {
 
 	// get user context
-	userContext := userContext.GetUserContext(r)
+	var userRequest request.UserRequest
+	if err := userRequest.ReadRequest(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	// get workspaceKey from URL
 	vars := mux.Vars(r)
@@ -63,7 +66,7 @@ func createChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err, statusErr := channel.CreateChannel(channelDTO.Name, channelDTO.Password, workspaceKey, userContext)
+	err, statusErr := channel.CreateChannel(channelDTO.Name, channelDTO.Password, workspaceKey, userRequest.GetUserId())
 
 	if err != nil {
 		http.Error(w, err.Error(), statusErr)
@@ -76,7 +79,11 @@ func createChannel(w http.ResponseWriter, r *http.Request) {
 func updateChannel(w http.ResponseWriter, r *http.Request) {
 
 	// get user context
-	userContext := userContext.GetUserContext(r)
+	var userRequest request.UserRequest
+	if err := userRequest.ReadRequest(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	// get workspaceKey from URL
 	vars := mux.Vars(r)
@@ -91,7 +98,7 @@ func updateChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err, statusErr := channel.UpdateChannel(channelId, channelDTO.Name, channelDTO.Password, workspaceKey, userContext)
+	err, statusErr := channel.UpdateChannel(channelId, channelDTO.Name, channelDTO.Password, workspaceKey, userRequest.GetUserId())
 
 	if err != nil {
 		http.Error(w, err.Error(), statusErr)
@@ -104,14 +111,17 @@ func updateChannel(w http.ResponseWriter, r *http.Request) {
 func deleteChannel(w http.ResponseWriter, r *http.Request) {
 
 	// get user context
-	userContext := userContext.GetUserContext(r)
-
+	var userRequest request.UserRequest
+	if err := userRequest.ReadRequest(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	// get workspaceKey from URL
 	vars := mux.Vars(r)
 	workspaceKey := vars["workspaceKey"]
 	channelId, _ := strconv.Atoi(vars["id"])
 
-	err, statusErr := channel.DeleteChannel(channelId, workspaceKey, userContext)
+	err, statusErr := channel.DeleteChannel(channelId, workspaceKey, userRequest.GetUserId())
 
 	if err != nil {
 		http.Error(w, err.Error(), statusErr)
@@ -124,8 +134,11 @@ func deleteChannel(w http.ResponseWriter, r *http.Request) {
 func joinToChannel(w http.ResponseWriter, r *http.Request) {
 
 	// get user context
-	userContext := userContext.GetUserContext(r)
-
+	var userRequest request.UserRequest
+	if err := userRequest.ReadRequest(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	// get workspaceKey from URL
 	vars := mux.Vars(r)
 	workspaceKey := vars["workspaceKey"]
@@ -134,7 +147,7 @@ func joinToChannel(w http.ResponseWriter, r *http.Request) {
 	var channelDTO channelDTO.ChannelDTO
 	_ = json.NewDecoder(r.Body).Decode(&channelDTO)
 
-	err, statusErr := channel.JoinToChannel(channelId, channelDTO.Password, workspaceKey, userContext)
+	err, statusErr := channel.JoinToChannel(channelId, channelDTO.Password, workspaceKey, userRequest.GetUserId())
 
 	if err != nil {
 		http.Error(w, err.Error(), statusErr)
@@ -147,14 +160,17 @@ func joinToChannel(w http.ResponseWriter, r *http.Request) {
 func membersOfChannel(w http.ResponseWriter, r *http.Request) {
 
 	// get user context
-	userContext := userContext.GetUserContext(r)
-
+	var userRequest request.UserRequest
+	if err := userRequest.ReadRequest(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	// get workspaceKey from URL
 	vars := mux.Vars(r)
 	workspaceKey := vars["workspaceKey"]
 	channelId, _ := strconv.Atoi(vars["id"])
 
-	members, err, statusErr := channel.MembersOfChannel(channelId, workspaceKey, userContext)
+	members, err, statusErr := channel.MembersOfChannel(channelId, workspaceKey, userRequest.GetUserId())
 
 	if err != nil {
 		http.Error(w, err.Error(), statusErr)
@@ -167,14 +183,17 @@ func membersOfChannel(w http.ResponseWriter, r *http.Request) {
 func leaveChannel(w http.ResponseWriter, r *http.Request) {
 
 	// get user context
-	userContext := userContext.GetUserContext(r)
-
+	var userRequest request.UserRequest
+	if err := userRequest.ReadRequest(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	// get workspaceKey from URL
 	vars := mux.Vars(r)
 	workspaceKey := vars["workspaceKey"]
 	channelId, _ := strconv.Atoi(vars["id"])
 
-	err, statusErr := channel.LeaveChannel(channelId, workspaceKey, userContext)
+	err, statusErr := channel.LeaveChannel(channelId, workspaceKey, userRequest.GetUserId())
 
 	if err != nil {
 		http.Error(w, err.Error(), statusErr)
