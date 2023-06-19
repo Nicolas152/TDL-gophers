@@ -19,6 +19,12 @@ type User struct {
 	Password string
 }
 
+type UserClient struct {
+	Id    int
+	Email string
+	Name  string
+}
+
 func GetUserById(id int) (User, error) {
 	// Obtengo un usuario por id
 	conn := database.GetConnection()

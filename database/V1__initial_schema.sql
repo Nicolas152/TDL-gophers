@@ -63,41 +63,42 @@ CREATE TABLE IF NOT EXISTS `channels` (
     CONSTRAINT `channels_fk_2` FOREIGN KEY (`creator`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
--- Creo la tabla de Chats
-CREATE TABLE IF NOT EXISTS `chats` (
+
+-- Creo tabla de relaciones entre usuarios y channels
+CREATE TABLE IF NOT EXISTS `user_channels` (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
     channel_id INT NOT NULL,
-    user_id INT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY `user_channel_unique` (`user_id`, `channel_id`),
+    KEY `user_id` (`user_id`),
     KEY `channel_id` (`channel_id`),
-    KEY `user_id` (`user_id`),
-    CONSTRAINT `chats_fk_1` FOREIGN KEY (`channel_id`) REFERENCES `channels` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `chats_fk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT `user_channel_fk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `user_channel_fk_2` FOREIGN KEY (`channel_id`) REFERENCES `channels` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
--- Creo tabla de relaciones entre usuarios y chat
-CREATE TABLE IF NOT EXISTS `user_chat` (
+-- Creo la tabla de Messages de un channel
+CREATE TABLE IF NOT EXISTS `channel_messages` (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
-    chat_id INT NOT NULL,
-    UNIQUE KEY `user_chat_unique` (`user_id`, `chat_id`),
-    KEY `user_id` (`user_id`),
-    KEY `chat_id` (`chat_id`),
-    CONSTRAINT `user_chat_fk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `user_chat_fk_2` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- Creo la tabla de Messages
-CREATE TABLE IF NOT EXISTS `messages` (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    chat_id INT NOT NULL,
+    channel_id INT NOT NULL,
     message VARCHAR(256) NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    KEY `chat_id` (`chat_id`),
+    KEY `channel_id` (`channel_id`),
     KEY `user_id` (`user_id`),
     CONSTRAINT `messages_fk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `messages_fk_2` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT `messages_fk_2` FOREIGN KEY (`channel_id`) REFERENCES `channels` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+
+-- Creo la tabla de DMS
+CREATE TABLE IF NOT EXISTS `chats` (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    channel_id INT NOT NULL,
+    --user_id INT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ---KEY `channel_id` (`channel_id`),
+    --KEY `user_id` (`user_id`),
+    ---CONSTRAINT `chats_fk_1` FOREIGN KEY (`channel_id`) REFERENCES `channels` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    --CONSTRAINT `chats_fk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
