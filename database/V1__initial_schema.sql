@@ -92,13 +92,36 @@ CREATE TABLE IF NOT EXISTS `channel_messages` (
 
 
 -- Creo la tabla de DMS
-CREATE TABLE IF NOT EXISTS `chats` (
+CREATE TABLE IF NOT EXISTS `dms` (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    channel_id INT NOT NULL,
-    --user_id INT NOT NULL,
+    workspace_id INT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ---KEY `channel_id` (`channel_id`),
-    --KEY `user_id` (`user_id`),
-    ---CONSTRAINT `chats_fk_1` FOREIGN KEY (`channel_id`) REFERENCES `channels` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    --CONSTRAINT `chats_fk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    KEY `workspace_id` (`workspace_id`),
+    CONSTRAINT `dm_fk_1` FOREIGN KEY (`workspace_id`) REFERENCES `workspaces` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- Creo la tabla de Messages de un dm
+CREATE TABLE IF NOT EXISTS `dm_messages` (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    dm_id INT NOT NULL,
+    message VARCHAR(256) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    KEY `user_id` (`user_id`),
+    KEY `dm_id` (`dm_id`),
+    CONSTRAINT `dm_messages_fk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `dm_messages_fk_2` FOREIGN KEY (`dm_id`) REFERENCES `dms` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- Creo tabla de relaciones entre usuarios y dms
+CREATE TABLE IF NOT EXISTS `user_dms` (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    dm_id INT NOT NULL,
+    UNIQUE KEY `user_dm_unique` (`user_id`, `dm_id`),
+    KEY `user_id` (`user_id`),
+    KEY `dm_id` (`dm_id`),
+    CONSTRAINT `user_dm_fk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `user_dm_fk_2` FOREIGN KEY (`dm_id`) REFERENCES `dms` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
