@@ -51,15 +51,25 @@ func (dm DM) Create() error {
 	defer conn.Close()
 
 	query := `
-	INSERT INTO dms (id, workspace_id)
-	VALUES (?, ?)`
+	INSERT INTO dms (workspace_id)
+	VALUE ?`
 
-	_, err := (*conn).Exec(query, dm.Id, dm.WorkspaceId)
+	res, err := (*conn).Exec(query, dm.Id, dm.WorkspaceId)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	
+	//create dm member
+	relationship := userDMRelationship.UserDMRelationship{
+		UserId: dm.Id, 
+		DMId: int(id),
+	}
+	return relationship.Create()
 }
 
 func (dm DM) Update() error {
@@ -119,17 +129,46 @@ func (dm DM) Exists() (bool, error) {
 	return true, nil
 }
 
-func GetDMsByUserId(userId int) ([]DM, error) {
+/*
+func GetDMsByWorkspaceId(workspaceId int) ([]DM, error) {
 	conn := database.GetConnection()
 	defer conn.Close()
 
 	query := `
-	SELECT dms.id, dms.workspace_id
+	SELECT id, workspace_id
 	FROM dms
-	INNER JOIN user_dms ON dms.id = user_dms.dm_id
-	WHERE user_dms.user_id = ?`
+	WHERE workspace_id = ?`
 
-	rows, err := (*conn).Query(query, userId)
+	rows, err := (*conn).Query(query, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var dms []DM
+	for rows.Next() {
+		var dm DM
+		if err := rows.Scan(&dm.Id, &dm.WorkspaceId); err != nil {
+			return nil, err
+		}
+		dms = append(dms, dm)
+	}
+
+	return dms, nil
+}
+*/
+
+func GetDMsByUserAndWorkspace(user_id int, workspaceId int) ([]DM, error) {
+	conn := database.GetConnection()
+	defer conn.Close()
+
+	query := `
+	SELECT id, workspace_id
+	FROM dms
+	INNER JOIN user_dms ON id = user_dms.dm_id
+	WHERE user_dms.user_id = ? AND workspace_id = ?`
+
+	rows, err := (*conn).Query(query, user_id, workspaceId)
 	if err != nil {
 		return nil, err
 	}
@@ -147,33 +186,6 @@ func GetDMsByUserId(userId int) ([]DM, error) {
 	return dms, nil
 }
 
-func GetDMsByUserAndWorkspace(user user.User, workspaceId int) ([]DM, error) {
-	conn := database.GetConnection()
-	defer conn.Close()
-
-	query := `
-	SELECT dms.id, dms.workspace_id
-	FROM dms
-	INNER JOIN user_dms ON dms.id = user_dms.dm_id
-	WHERE user_dms.user_id = ? AND dms.workspace_id = ?`
-
-	rows, err := (*conn).Query(query, user.Id, workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var dms []DM
-	for rows.Next() {
-		var dm DM
-		if err := rows.Scan(&dm.Id, &dm.WorkspaceId); err != nil {
-			return nil, err
-		}
-		dms = append(dms, dm)
-	}
-
-	return dms, nil
-}
 
 func (dm DM) Join(userId int) error {
 	conn := database.GetConnection()
@@ -190,3 +202,33 @@ func (dm DM) Join(userId int) error {
 
 	return relationship.Create()
 }
+
+func (dm DM) Leave(userId int) error {
+	conn := database.GetConnection()
+	defer conn.Close()
+
+	relationship := userDMRelationship.UserDMRelationship{
+		UserId: userId,
+		DMId:   dm.Id,
+	}
+
+	if !relationship.Exists() {
+		return nil
+	}
+
+	return relationship.Delete()
+}
+
+func (dm DM) GetMembers() ([]user.UserClient, error) {
+	relationship := userDMRelationship.UserDMRelationship{DMId: dm.Id}
+	return relationship.GetMembers()
+}
+
+func (dm DM) IsMember(userId int) (bool, error) {
+	relationship := userDMRelationship.UserDMRelationship{
+		UserId: userId,
+		DMId:   dm.Id,
+	}
+	return relationship.Exists(), nil
+}
+
