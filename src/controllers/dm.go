@@ -1,33 +1,36 @@
 package controllers
 
 import (
-	"gochat/src/controllers/authentication/authMiddleware"
-	"gochat/src/controllers/authentication/userContext"
+	"github.com/gorilla/mux"
+	"gochat/src/middlewares"
+	"gochat/src/models/request"
 	"gochat/src/services/dm"
 	"net/http"
 	"strconv"
-	"github.com/gorilla/mux"
 )
 
 func AddDMController(myRouter *mux.Router) {
 	// Get dms by workspace
-	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm", authMiddleware.VerifyTokenMiddleware(getDMsByWorkspace)).Methods("GET")
-	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm", authMiddleware.VerifyTokenMiddleware(createDM)).Methods("POST")
-	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm/{id}/join", authMiddleware.VerifyTokenMiddleware(joinToDM)).Methods("POST")
-	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm/{id}/leave", authMiddleware.VerifyTokenMiddleware(leaveDM)).Methods("POST")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm", middlewares.AuthenticationMiddleware(getDMsByWorkspace)).Methods("GET")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm", middlewares.AuthenticationMiddleware(createDM)).Methods("POST")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm/{id}/join", middlewares.AuthenticationMiddleware(joinToDM)).Methods("POST")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm/{id}/leave", middlewares.AuthenticationMiddleware(leaveDM)).Methods("POST")
 
 }
 
 func getDMsByWorkspace(w http.ResponseWriter, r *http.Request) {
-	
-	// get user context
-	userContext := userContext.GetUserContext(r)
+	// Cargo la request del cliente
+	var userRequest request.UserRequest
+	if err := userRequest.ReadRequest(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	// get workspaceKey from URL
 	vars := mux.Vars(r)
 	workspaceKey := vars["workspaceKey"]
 
-	dms, err, statusErr := dm.GetDMsByUserAndWorkspace(userContext, workspaceKey)
+	dms, err, statusErr := dm.GetDMsByUserAndWorkspace(userRequest.GetUserId(), workspaceKey)
 
 	if err != nil {
 		http.Error(w, err.Error(), statusErr)
@@ -38,15 +41,18 @@ func getDMsByWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func createDM(w http.ResponseWriter, r *http.Request) {
-	
-	// get user context
-	userContext := userContext.GetUserContext(r)
+	// Cargo la request del cliente
+	var userRequest request.UserRequest
+	if err := userRequest.ReadRequest(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	// get workspaceKey from URL
 	vars := mux.Vars(r)
 	workspaceKey := vars["workspaceKey"]
 
-	err, statusErr := dm.CreateDM(workspaceKey, userContext)
+	err, statusErr := dm.CreateDM(workspaceKey, userRequest.GetUserId())
 
 	if err != nil {
 		http.Error(w, err.Error(), statusErr)
@@ -57,9 +63,12 @@ func createDM(w http.ResponseWriter, r *http.Request) {
 }
 
 func joinToDM(w http.ResponseWriter, r *http.Request) {
-	
-	// get user context
-	userContext := userContext.GetUserContext(r)
+	// Cargo la request del cliente
+	var userRequest request.UserRequest
+	if err := userRequest.ReadRequest(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	// get workspaceKey from URL
 	vars := mux.Vars(r)
@@ -70,7 +79,7 @@ func joinToDM(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err, statusErr := dm.JoinDM(id, workspaceKey, userContext)
+	err, statusErr := dm.JoinDM(id, workspaceKey, userRequest.GetUserId())
 
 	if err != nil {
 		http.Error(w, err.Error(), statusErr)
@@ -81,9 +90,12 @@ func joinToDM(w http.ResponseWriter, r *http.Request) {
 }
 
 func leaveDM(w http.ResponseWriter, r *http.Request) {
-	
-	// get user context
-	userContext := userContext.GetUserContext(r)
+	// Cargo la request del cliente
+	var userRequest request.UserRequest
+	if err := userRequest.ReadRequest(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	// get workspaceKey from URL
 	vars := mux.Vars(r)
@@ -94,7 +106,7 @@ func leaveDM(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err, statusErr := dm.LeaveDM(id, workspaceKey, userContext)
+	err, statusErr := dm.LeaveDM(id, workspaceKey, userRequest.GetUserId())
 
 	if err != nil {
 		http.Error(w, err.Error(), statusErr)

@@ -3,25 +3,24 @@ package dm
 import (
 	"encoding/json"
 	"errors"
-	"gochat/src/controllers/authentication/userContext"
 	"gochat/src/models/dm"
 	"gochat/src/models/workspace"
 	"net/http"
 )
 
 
-func GetDMsByUserAndWorkspace(userContext *userContext.UserContext, workspaceKey string) ([]byte, error, int) {
+func GetDMsByUserAndWorkspace(userId int, workspaceKey string) ([]byte, error, int) {
 	// validate if workspaceModel exists
 	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
 	if err != nil {
 		return nil, errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := DMValidations(workspaceModel, userContext); err != nil {
+	if err, statusErr := DMValidations(workspaceModel, userId); err != nil {
 		return nil, err, statusErr
 	}
 
-	dms, err := dm.GetDMsByUserAndWorkspace(userContext.Id, workspaceModel.Id)
+	dms, err := dm.GetDMsByUserAndWorkspace(userId, workspaceModel.Id)
 	if err != nil {
 		return nil, errors.New("Error getting dms: " + err.Error()), http.StatusInternalServerError
 	}
@@ -36,13 +35,13 @@ func GetDMsByUserAndWorkspace(userContext *userContext.UserContext, workspaceKey
 
 // channelValidations performs validations to determine if the user has access to the workspace.
 // It returns an error and a corresponding HTTP status code based on the validation results.
-func DMValidations(workspaceModel workspace.Workspace, userContext *userContext.UserContext) (error, int) {
+func DMValidations(workspaceModel workspace.Workspace, userId int) (error, int) {
 	if workspaceModel.Id == 0 {
 		return errors.New("Workspace does not exists"), http.StatusBadRequest
 	}
 
 	// validate if user is a member of workspace
-	exists, err := workspaceModel.HasMember(userContext.Id);
+	exists, err := workspaceModel.HasMember(userId);
 	if err != nil {
 		return errors.New("Error validating if user is member of workspace: " + err.Error()), http.StatusInternalServerError
 	}
@@ -54,14 +53,14 @@ func DMValidations(workspaceModel workspace.Workspace, userContext *userContext.
 	return nil, 0
 }
 
-func CreateDM(workspaceKey string, userContext *userContext.UserContext) (error, int) {
+func CreateDM(workspaceKey string, userId int) (error, int) {
 	// validate if workspaceModel exists
 	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
 	if err != nil {
 		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := DMValidations(workspaceModel, userContext); err != nil {
+	if err, statusErr := DMValidations(workspaceModel, userId); err != nil {
 		return nil, statusErr
 	}
 
@@ -77,14 +76,14 @@ func CreateDM(workspaceKey string, userContext *userContext.UserContext) (error,
 	return nil, 0
 }
 
-func LeaveDM(id int, workspaceKey string, userContext *userContext.UserContext) (error, int) {
+func LeaveDM(id int, workspaceKey string, userId int) (error, int) {
 	// validate if workspaceModel exists
 	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
 	if err != nil {
 		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := DMValidations(workspaceModel, userContext); err != nil {
+	if err, statusErr := DMValidations(workspaceModel, userId); err != nil {
 		return nil, statusErr
 	}
 
@@ -99,21 +98,21 @@ func LeaveDM(id int, workspaceKey string, userContext *userContext.UserContext) 
 	}
 
 	//leave dm
-	if err := dmModel.Leave(userContext.Id); err != nil {
+	if err := dmModel.Leave(userId); err != nil {
 		return errors.New("Error leaving DM: " + err.Error()), http.StatusInternalServerError
 	}
 
 	return nil, 0
 }
 
-func JoinDM(id int, workspaceKey string, userContext *userContext.UserContext) (error, int) {
+func JoinDM(id int, workspaceKey string, userId int) (error, int) {
 	// validate if workspaceModel exists
 	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
 	if err != nil {
 		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := DMValidations(workspaceModel, userContext); err != nil {
+	if err, statusErr := DMValidations(workspaceModel, userId); err != nil {
 		return nil, statusErr
 	}
 
@@ -128,7 +127,7 @@ func JoinDM(id int, workspaceKey string, userContext *userContext.UserContext) (
 	}
 
 	//join dm
-	if err := dmModel.Join(userContext.Id); err != nil {
+	if err := dmModel.Join(userId); err != nil {
 		return errors.New("Error joining DM: " + err.Error()), http.StatusInternalServerError
 	}
 
@@ -136,7 +135,7 @@ func JoinDM(id int, workspaceKey string, userContext *userContext.UserContext) (
 }
 
 /*
-func MembersOfDM(id int, workspaceKey string, userContext *userContext.UserContext) ([]byte, error, int) {
+func MembersOfDM(id int, workspaceKey string, userId int) ([]byte, error, int) {
 	// validate if workspaceModel exists
 	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
 	if err != nil {
