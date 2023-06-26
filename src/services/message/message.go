@@ -1,12 +1,14 @@
 package message
 
 import (
-	"github.com/gorilla/mux"
-	"github.com/gorilla/websocket"
 	"gochat/src/models/message"
 	"gochat/src/models/message/subscription"
 	"gochat/src/models/request"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{}
@@ -21,7 +23,7 @@ func HandlerMessages(w http.ResponseWriter, r *http.Request) {
 
 	// Obtengo la WorkspaceKey y el ChannelKey de la request
 	workspaceKey := mux.Vars(r)["workspaceKey"]
-	channelKey := mux.Vars(r)["channelKey"]
+	channelKey, _ := strconv.Atoi(mux.Vars(r)["channelKey"])
 
 	// TODO: Validar que el usuario pertenezca a la workspace y al canal
 	// TODO: Obtener el ChatKey a partir de la WorkspaceKey y el ChannelKey
@@ -52,9 +54,15 @@ func HandlerMessages(w http.ResponseWriter, r *http.Request) {
 		// Agrego la WorkspaceKey y el ChannelKey al mensaje
 		msg.WorkspaceKey = workspaceKey
 		msg.ChannelKey = channelKey
+		msg.UserId = userRequest.GetUserId()
+
+		// save the message in the database
+		err = msg.Save()
+		if err != nil {
+			println(err.Error())
+		}
 
 		// Envio el mensaje a todos los clientes subscriptos al canal
 		subscription.BroadcastMessages <- msg
 	}
 }
-
