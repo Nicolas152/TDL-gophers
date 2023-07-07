@@ -14,6 +14,7 @@ func AddRoutes(myRouter *mux.Router) {
 
 	controllers.AddWorkspaceController(myRouter)
 	controllers.AddChannelController(myRouter)
+	controllers.AddDMController(myRouter)
 	controllers.AddWebsocketController(myRouter)
 }
 

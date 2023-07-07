@@ -43,6 +43,21 @@ func GetUserById(id int) (User, error) {
 	return User{id, email, name, ""}, nil
 }
 
+func GetUserIDByEmail(email string) (int, error) {
+    conn := database.GetConnection()
+    defer conn.Close()
+
+    var userID int
+    query := "SELECT id FROM users WHERE email = ?"
+    err := conn.QueryRow(query, email).Scan(&userID)
+    if err != nil {
+        return 0, err
+    }
+
+    return userID, nil
+}
+
+
 func Get() []User {
 	// Obtengo todos los usuarios de DB
 	users := make([]User, 0)

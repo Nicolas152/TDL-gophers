@@ -39,7 +39,7 @@ func GetConfig() *Config {
 
 	// TODO: No es correcto que cada vez que se quiera acceder a la config, se tenga que leer el archivo
 	// Leo el archivo de configuracion
-	file, err := os.ReadFile("./src/config/local.yaml")
+	file, err := os.ReadFile("C:\\Users\\Alicia\\Documents\\NICO\\UBA\\TDL\\TP-gochat\\TDL-gophers\\TDL-gophers\\src\\config\\local.yaml")
 	if err != nil {
 		log.Printf("Error al leer el archivo de configuracion: %v", err.Error())
 		return cfg

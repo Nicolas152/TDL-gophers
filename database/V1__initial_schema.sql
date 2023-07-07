@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS `dms` (
     workspace_id INT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     KEY `workspace_id` (`workspace_id`),
-    CONSTRAINT `dm_fk_1` FOREIGN KEY (`workspace_id`) REFERENCES `workspaces` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `dm_fk_1` FOREIGN KEY (`workspace_id`) REFERENCES `workspaces` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- Creo la tabla de Messages de un dm

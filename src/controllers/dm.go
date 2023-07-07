@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"github.com/gorilla/mux"
+	"encoding/json"
+	dmDTO "gochat/src/controllers/DTOs/dm"
 	"gochat/src/middlewares"
 	"gochat/src/models/request"
 	"gochat/src/services/dm"
@@ -30,7 +32,7 @@ func getDMsByWorkspace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	workspaceKey := vars["workspaceKey"]
 
-	dms, err, statusErr := dm.GetDMsByUserAndWorkspace(userRequest.GetUserId(), workspaceKey)
+	dms, err, statusErr := dm.GetDMsByWorkspace(userRequest.GetUserId(), workspaceKey)
 
 	if err != nil {
 		http.Error(w, err.Error(), statusErr)
@@ -52,7 +54,15 @@ func createDM(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	workspaceKey := vars["workspaceKey"]
 
-	err, statusErr := dm.CreateDM(workspaceKey, userRequest.GetUserId())
+	var dmDTO dmDTO.DmDTO
+	_ = json.NewDecoder(r.Body).Decode(&dmDTO)
+
+	if dmDTO.Email == "" {
+		http.Error(w, "Receiver email is required", http.StatusBadRequest)
+		return
+	}
+
+	err, statusErr := dm.CreateDM(workspaceKey, userRequest.GetUserId(), dmDTO.Email)
 
 	if err != nil {
 		http.Error(w, err.Error(), statusErr)
@@ -61,6 +71,7 @@ func createDM(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("DM created successfully"))
 }
+
 
 func joinToDM(w http.ResponseWriter, r *http.Request) {
 	// Cargo la request del cliente
