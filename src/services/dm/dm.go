@@ -5,11 +5,12 @@ import (
 	"errors"
 	"gochat/src/models/dm"
 	"gochat/src/models/workspace"
+	"gochat/src/models/user"
 	"net/http"
 )
 
 
-func GetDMsByUserAndWorkspace(userId int, workspaceKey string) ([]byte, error, int) {
+func GetDMsByWorkspace(userId int, workspaceKey string) ([]byte, error, int) {
 	// validate if workspaceModel exists
 	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
 	if err != nil {
@@ -20,7 +21,7 @@ func GetDMsByUserAndWorkspace(userId int, workspaceKey string) ([]byte, error, i
 		return nil, err, statusErr
 	}
 
-	dms, err := dm.GetDMsByUserAndWorkspace(userId, workspaceModel.Id)
+	dms, err := dm.GetDMsByWorkspaceId(workspaceModel.Id)
 	if err != nil {
 		return nil, errors.New("Error getting dms: " + err.Error()), http.StatusInternalServerError
 	}
@@ -53,14 +54,50 @@ func DMValidations(workspaceModel workspace.Workspace, userId int) (error, int) 
 	return nil, 0
 }
 
-func CreateDM(workspaceKey string, userId int) (error, int) {
+func DMUsersValidations(workspaceModel workspace.Workspace, senderId, receiverId int) (error, int) {
+	// Validar si el modelo de espacio de trabajo existe
+	if workspaceModel.Id == 0 {
+		return errors.New("El espacio de trabajo no existe"), http.StatusBadRequest
+	}
+
+	// Validar si el usuario remitente es miembro del espacio de trabajo
+	exists, err := workspaceModel.HasMember(senderId)
+	if err != nil {
+		return errors.New("Error validando si el usuario es miembro del espacio de trabajo: " + err.Error()), http.StatusInternalServerError
+	}
+
+	if !exists {
+		return errors.New("El usuario no es miembro del espacio de trabajo"), http.StatusUnauthorized
+	}
+
+	// Validar si el usuario receptor es miembro del espacio de trabajo
+	exists, err = workspaceModel.HasMember(receiverId)
+	if err != nil {
+		return errors.New("Error validando si el usuario receptor es miembro del espacio de trabajo: " + err.Error()), http.StatusInternalServerError
+	}
+
+	if !exists {
+		return errors.New("El usuario receptor no es miembro del espacio de trabajo"), http.StatusUnauthorized
+	}
+
+	return nil, 0
+}
+
+func CreateDM(workspaceKey string, senderID int, receiverEmail string) (error, int) {
 	// validate if workspaceModel exists
 	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
 	if err != nil {
 		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := DMValidations(workspaceModel, userId); err != nil {
+	receiverID, err := user.GetUserIDByEmail(receiverEmail)
+
+	if err != nil {
+		return errors.New("Error obtaining receiver ID: " + err.Error()), http.StatusInternalServerError
+	}
+
+
+	if err, statusErr := DMUsersValidations(workspaceModel, senderID, receiverID); err != nil {
 		return nil, statusErr
 	}
 
@@ -68,7 +105,7 @@ func CreateDM(workspaceKey string, userId int) (error, int) {
 		WorkspaceId: workspaceModel.Id,
 	}
 
-	err = dmModel.Create()
+	err = dmModel.Create(senderID, receiverID)
 	if err != nil {
 		return errors.New("Error creating dm: " + err.Error()), http.StatusInternalServerError
 	}
