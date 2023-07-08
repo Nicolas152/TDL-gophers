@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS `workspaces` (
     creator INT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY `name` (`name`),
+    UNIQUE KEY `name_creator` (`name`, `creator`),
     CONSTRAINT `workspaces_fk_1` FOREIGN KEY (`creator`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 

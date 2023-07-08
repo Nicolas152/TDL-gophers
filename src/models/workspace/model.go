@@ -81,10 +81,10 @@ func (workspace Workspace) GetId() int {
 }
 
 func (workspace Workspace) Create(userId int) error {
-	// Valido que el workspace no exista
-	// if exist, _ := workspace.Exists(); exist {
-	// 	return errors.New("Workspace already exists")
-	// }
+	// Realizo validaciones sobre el workspace
+	if err := workspace.Validate(userId); err != nil {
+		return err
+	}
 
 	conn := database.GetConnection()
 	defer conn.Close()
@@ -96,6 +96,7 @@ func (workspace Workspace) Create(userId int) error {
 		return err
 	}
 
+	// Obtengo el WorkspaceId
 	workspaceId, err := res.LastInsertId()
 	if err != nil {
 		return err
@@ -149,6 +150,30 @@ func (workspace Workspace) Delete(userId int) error {
 	_, err := (*conn).Exec("DELETE FROM workspaces WHERE workflow_key = ?", workspace.WorkspaceKey)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (workspace Workspace) Validate(userId int) error {
+	if workspace.Name == "" {
+		return errors.New("Name is required")
+	}
+
+	// Valido que el usuario no tenga un workspace con el mismo nombre
+	conn := database.GetConnection()
+	defer conn.Close()
+
+	result := (*conn).QueryRow("SELECT id FROM workspaces WHERE name = ? AND creator = ?", workspace.Name, userId)
+
+	var id int
+	err := result.Scan(&id)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+
+	if id > 0 {
+		return errors.New("Workspace name already exists")
 	}
 
 	return nil
