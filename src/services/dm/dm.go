@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"gochat/src/models/dm"
-	"gochat/src/models/workspace"
 	"gochat/src/models/user"
+	"gochat/src/models/workspace"
 	"net/http"
 )
-
 
 func GetDMsByWorkspace(userId int, workspaceKey string) ([]byte, error, int) {
 	// validate if workspaceModel exists
@@ -42,7 +41,7 @@ func DMValidations(workspaceModel workspace.Workspace, userId int) (error, int) 
 	}
 
 	// validate if user is a member of workspace
-	exists, err := workspaceModel.HasMember(userId);
+	exists, err := workspaceModel.HasMember(userId)
 	if err != nil {
 		return errors.New("Error validating if user is member of workspace: " + err.Error()), http.StatusInternalServerError
 	}
@@ -50,7 +49,7 @@ func DMValidations(workspaceModel workspace.Workspace, userId int) (error, int) 
 	if !exists {
 		return errors.New("User is not member of workspace"), http.StatusUnauthorized
 	}
-	
+
 	return nil, 0
 }
 
@@ -96,9 +95,8 @@ func CreateDM(workspaceKey string, senderID int, receiverEmail string) (error, i
 		return errors.New("Error obtaining receiver ID: " + err.Error()), http.StatusInternalServerError
 	}
 
-
 	if err, statusErr := DMUsersValidations(workspaceModel, senderID, receiverID); err != nil {
-		return nil, statusErr
+		return err, statusErr
 	}
 
 	dmModel := dm.DM{
@@ -125,7 +123,7 @@ func LeaveDM(id int, workspaceKey string, userId int) (error, int) {
 	}
 
 	dmModel := dm.DM{
-		Id: id,
+		Id:          id,
 		WorkspaceId: workspaceModel.Id,
 	}
 
@@ -154,7 +152,7 @@ func JoinDM(id int, workspaceKey string, userId int) (error, int) {
 	}
 
 	dmModel := dm.DM{
-		Id: id,
+		Id:          id,
 		WorkspaceId: workspaceModel.Id,
 	}
 
