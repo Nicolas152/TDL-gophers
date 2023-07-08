@@ -2,15 +2,16 @@ package middlewares
 
 import (
 	"context"
-	"github.com/dgrijalva/jwt-go"
 	"gochat/src/models/request"
 	"net/http"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 type JWTClaims struct {
-	UserId 	int 	`json:"userId"`
-	Email 	string 	`json:"email"`
-	Name 	string 	`json:"name"`
+	UserId int    `json:"userId"`
+	Email  string `json:"email"`
+	Name   string `json:"name"`
 	jwt.StandardClaims
 }
 
@@ -25,6 +26,7 @@ func AuthenticationMiddleware(target http.HandlerFunc) http.HandlerFunc {
 
 		// Realizo validaciones base
 		if !userRequest.HasTokenAccess() || !userRequest.IsTokenAccessValid() {
+			// TODO: @jesusphilipraiz no debería ser 401?
 			http.Error(w, "Could not load server context. Reason: Resource not found", http.StatusNotFound)
 			return
 		}

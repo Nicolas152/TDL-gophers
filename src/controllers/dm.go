@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"github.com/gorilla/mux"
 	"encoding/json"
 	dmDTO "gochat/src/controllers/DTOs/dm"
 	"gochat/src/middlewares"
@@ -9,6 +8,8 @@ import (
 	"gochat/src/services/dm"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 func AddDMController(myRouter *mux.Router) {
@@ -17,7 +18,7 @@ func AddDMController(myRouter *mux.Router) {
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm", middlewares.AuthenticationMiddleware(createDM)).Methods("POST")
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm/{id}/join", middlewares.AuthenticationMiddleware(joinToDM)).Methods("POST")
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm/{id}/leave", middlewares.AuthenticationMiddleware(leaveDM)).Methods("POST")
-
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm/{id}/messages", middlewares.AuthenticationMiddleware(messagesDM)).Methods("GET")
 }
 
 func getDMsByWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +73,6 @@ func createDM(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("DM created successfully"))
 }
 
-
 func joinToDM(w http.ResponseWriter, r *http.Request) {
 	// Cargo la request del cliente
 	var userRequest request.UserRequest
@@ -125,4 +125,27 @@ func leaveDM(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("DM left successfully"))
+}
+
+func messagesDM(w http.ResponseWriter, r *http.Request) {
+
+	// get user context
+	var userRequest request.UserRequest
+	if err := userRequest.ReadRequest(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// get workspaceKey from URL
+	vars := mux.Vars(r)
+	workspaceKey := vars["workspaceKey"]
+	dmId, _ := strconv.Atoi(vars["id"])
+
+	messages, err, statusErr := dm.Messages(dmId, workspaceKey, userRequest.GetUserId())
+
+	if err != nil {
+		http.Error(w, err.Error(), statusErr)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(messages)
 }

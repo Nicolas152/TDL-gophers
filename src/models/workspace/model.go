@@ -23,17 +23,17 @@ type WorkspaceInterface interface {
 
 // Modelo workspace usado para el cliente
 type ClientWorkspace struct {
-	WorkspaceKey 	string
-	Name 	   	 	string
+	WorkspaceKey string
+	Name         string
 }
 
 // Modelo workspace usado para el servidor
 type Workspace struct {
-	Id          	int
-	WorkspaceKey 	string
-	Name        	string
-	Password    	string
-	Creator     	int
+	Id           int
+	WorkspaceKey string
+	Name         string
+	Password     string
+	Creator      int
 }
 
 func GetWorkspaceByKey(key string) (Workspace, error) {
@@ -133,8 +133,8 @@ func (workspace Workspace) Update(userId int, newWorkspace Workspace) error {
 	defer conn.Close()
 
 	_, err := (*conn).Exec(
-		"UPDATE workspaces SET " + strings.Join(fields, ", ") + " WHERE workflow_key = ?",
-		values...
+		"UPDATE workspaces SET "+strings.Join(fields, ", ")+" WHERE workflow_key = ?",
+		values...,
 	)
 	if err != nil {
 		return err

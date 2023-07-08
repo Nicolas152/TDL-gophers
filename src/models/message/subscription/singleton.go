@@ -1,8 +1,9 @@
 package subscription
 
 import (
-	"github.com/gorilla/websocket"
 	"sync"
+
+	"github.com/gorilla/websocket"
 )
 
 // Lock que protege la creacion de la instancia
@@ -19,10 +20,9 @@ func GetSubscriptionInstance() *Subscriptor {
 
 		if subscriptionInstance == nil {
 			subscriptionInstance = &Subscriptor{
-				Subscriptions: make(map[string]map[string]map[*websocket.Conn]bool),
+				Subscriptions: make(map[int]map[*websocket.Conn]bool),
 			}
 		}
 	}
 	return subscriptionInstance
 }
-

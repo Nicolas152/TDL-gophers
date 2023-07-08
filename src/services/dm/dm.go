@@ -3,12 +3,12 @@ package dm
 import (
 	"encoding/json"
 	"errors"
+	"gochat/src/models/chat"
 	"gochat/src/models/dm"
-	"gochat/src/models/workspace"
 	"gochat/src/models/user"
+	"gochat/src/models/workspace"
 	"net/http"
 )
-
 
 func GetDMsByWorkspace(userId int, workspaceKey string) ([]byte, error, int) {
 	// validate if workspaceModel exists
@@ -42,7 +42,7 @@ func DMValidations(workspaceModel workspace.Workspace, userId int) (error, int) 
 	}
 
 	// validate if user is a member of workspace
-	exists, err := workspaceModel.HasMember(userId);
+	exists, err := workspaceModel.HasMember(userId)
 	if err != nil {
 		return errors.New("Error validating if user is member of workspace: " + err.Error()), http.StatusInternalServerError
 	}
@@ -50,7 +50,7 @@ func DMValidations(workspaceModel workspace.Workspace, userId int) (error, int) 
 	if !exists {
 		return errors.New("User is not member of workspace"), http.StatusUnauthorized
 	}
-	
+
 	return nil, 0
 }
 
@@ -96,9 +96,8 @@ func CreateDM(workspaceKey string, senderID int, receiverEmail string) (error, i
 		return errors.New("Error obtaining receiver ID: " + err.Error()), http.StatusInternalServerError
 	}
 
-
 	if err, statusErr := DMUsersValidations(workspaceModel, senderID, receiverID); err != nil {
-		return nil, statusErr
+		return err, statusErr
 	}
 
 	dmModel := dm.DM{
@@ -125,7 +124,7 @@ func LeaveDM(id int, workspaceKey string, userId int) (error, int) {
 	}
 
 	dmModel := dm.DM{
-		Id: id,
+		Id:          id,
 		WorkspaceId: workspaceModel.Id,
 	}
 
@@ -154,7 +153,7 @@ func JoinDM(id int, workspaceKey string, userId int) (error, int) {
 	}
 
 	dmModel := dm.DM{
-		Id: id,
+		Id:          id,
 		WorkspaceId: workspaceModel.Id,
 	}
 
@@ -169,6 +168,32 @@ func JoinDM(id int, workspaceKey string, userId int) (error, int) {
 	}
 
 	return nil, 0
+}
+
+func Messages(id int, workspaceKey string, userId int) ([]byte, error, int) {
+
+	// validate if workspaceModel exists
+	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
+	if err != nil {
+		return nil, errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
+	}
+
+	if err, statusErr := DMValidations(workspaceModel, userId); err != nil {
+		return nil, err, statusErr
+	}
+
+	chatId, err := chat.Resolve(0, id)
+	messages, err := chat.GetMessages(chatId)
+	if err != nil {
+		return nil, errors.New("Could not get messages of DM. Reason:" + err.Error()), http.StatusBadRequest
+	}
+
+	messagesJson, err := json.Marshal(messages)
+	if err != nil {
+		return nil, errors.New("Error marshalling messages: " + err.Error()), http.StatusInternalServerError
+	}
+
+	return messagesJson, nil, 0
 }
 
 /*

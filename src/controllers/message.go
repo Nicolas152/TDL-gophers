@@ -1,12 +1,14 @@
 package controllers
 
 import (
-	"github.com/gorilla/mux"
+	"gochat/src/middlewares"
 	"gochat/src/services/message"
+
+	"github.com/gorilla/mux"
 )
 
-// TODO: Agregar el middleware de autenticacion
 func AddWebsocketController(myRouter *mux.Router) {
 	// Handler para manipular la conexion websocket
-	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{channelKey}/message", message.HandlerMessages)
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{channelKey}/message", middlewares.AuthenticationMiddleware(message.HandlerMessages))
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm/{dmKey}/message", middlewares.AuthenticationMiddleware(message.HandlerMessages))
 }
