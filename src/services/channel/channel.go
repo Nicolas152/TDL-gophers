@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"gochat/src/models/channel"
+	"gochat/src/models/chat"
 	"gochat/src/models/workspace"
 	"net/http"
 )
@@ -229,4 +230,30 @@ func LeaveChannel(id int, workspaceKey string, userId int) (error, int) {
 	}
 
 	return nil, 0
+}
+
+func Messages(id int, workspaceKey string, userId int) ([]byte, error, int) {
+
+	// validate if workspaceModel exists
+	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
+	if err != nil {
+		return nil, errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
+	}
+
+	if err, statusErr := channelValidations(workspaceModel, userId); err != nil {
+		return nil, err, statusErr
+	}
+
+	chatId, err := chat.Resolve(id, 0)
+	messages, err := chat.GetMessages(chatId)
+	if err != nil {
+		return nil, errors.New("Could not get messages of Channel. Reason:" + err.Error()), http.StatusBadRequest
+	}
+
+	messagesJson, err := json.Marshal(messages)
+	if err != nil {
+		return nil, errors.New("Error marshalling messages: " + err.Error()), http.StatusInternalServerError
+	}
+
+	return messagesJson, nil, 0
 }

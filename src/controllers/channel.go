@@ -21,6 +21,7 @@ func AddChannelController(myRouter *mux.Router) {
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}/join", middlewares.AuthenticationMiddleware(joinToChannel)).Methods("POST")
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}/members", middlewares.AuthenticationMiddleware(membersOfChannel)).Methods("GET")
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}/leave", middlewares.AuthenticationMiddleware(leaveChannel)).Methods("POST")
+	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{id}/messages", middlewares.AuthenticationMiddleware(messages)).Methods("GET")
 
 }
 
@@ -201,4 +202,27 @@ func leaveChannel(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Channel left successfully"))
+}
+
+func messages(w http.ResponseWriter, r *http.Request) {
+
+	// get user context
+	var userRequest request.UserRequest
+	if err := userRequest.ReadRequest(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// get workspaceKey from URL
+	vars := mux.Vars(r)
+	workspaceKey := vars["workspaceKey"]
+	channelId, _ := strconv.Atoi(vars["id"])
+
+	messages, err, statusErr := channel.Messages(channelId, workspaceKey, userRequest.GetUserId())
+
+	if err != nil {
+		http.Error(w, err.Error(), statusErr)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(messages)
 }

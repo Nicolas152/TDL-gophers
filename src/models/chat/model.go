@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"gochat/src/connections/database"
+	"gochat/src/models/message"
 )
 
 type Chat struct {
@@ -72,4 +73,32 @@ func Resolve(channelId int, dmId int) (int, error) {
 	}
 
 	return id, nil
+}
+
+func GetMessages(id int) ([]message.Message, error) {
+	conn := database.GetConnection()
+	defer conn.Close()
+
+	query := `
+	SELECT user_id, message
+	FROM chat_messages
+	WHERE chat_id = ?`
+
+	rows, err := (*conn).Query(query, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	messages := make([]message.Message, 0)
+	for rows.Next() {
+		var message message.Message
+		if err := rows.Scan(&message.UserId, &message.Message); err != nil {
+			return nil, err
+		}
+
+		messages = append(messages, message)
+	}
+
+	return messages, nil
 }
