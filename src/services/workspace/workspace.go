@@ -59,9 +59,15 @@ func HandlerCreateWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	// Creo el Workspace
 	if err := workspaceModel.Create(userRequest.GetUserId()); err != nil {
-		http.Error(w, "Could not create Workspace. Reason: " + err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Could not create Workspace. Reason: " + err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// Envio la respuesta
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	response := map[string]string{"message": "Workflow created successfully"}
+	json.NewEncoder(w).Encode(response)
 }
 
 func HandlerUpdateWorkspace(w http.ResponseWriter, r *http.Request) {
