@@ -10,4 +10,5 @@ import (
 func AddWebsocketController(myRouter *mux.Router) {
 	// Handler para manipular la conexion websocket
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{channelKey}/message", middlewares.AuthenticationMiddleware(message.HandlerMessages))
+	// myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/channel/{dmKey}/message", middlewares.AuthenticationMiddleware(message.HandlerMessages))
 }

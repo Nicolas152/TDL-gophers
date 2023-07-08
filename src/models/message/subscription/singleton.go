@@ -20,7 +20,7 @@ func GetSubscriptionInstance() *Subscriptor {
 
 		if subscriptionInstance == nil {
 			subscriptionInstance = &Subscriptor{
-				Subscriptions: make(map[string]map[int]map[*websocket.Conn]bool),
+				Subscriptions: make(map[int]map[*websocket.Conn]bool),
 			}
 		}
 	}

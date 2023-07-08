@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"gochat/src/connections/database"
 	"gochat/src/models/channel/userChannelRelationship"
+	"gochat/src/models/chat"
 	"gochat/src/models/user"
 )
 
@@ -103,6 +104,11 @@ func (channel Channel) Create() error {
 	}
 
 	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	_, err = chat.Create(int(id), 0)
 	if err != nil {
 		return err
 	}

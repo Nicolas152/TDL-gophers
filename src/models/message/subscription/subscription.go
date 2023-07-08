@@ -17,44 +17,36 @@ type SubscriptorInterface struct {
 
 // TODO: Tiene que ser solo un map de un nivel.
 type Subscriptor struct {
-	Subscriptions map[string]map[int]map[*websocket.Conn]bool
+	Subscriptions map[int]map[*websocket.Conn]bool
 }
 
-func (s *Subscriptor) Subscribe(ws *websocket.Conn, workspaceKey string, channelKey int) {
+func (s *Subscriptor) Subscribe(ws *websocket.Conn, chatId int) {
 	// Protejo la subscripcion de un cliente a un canal
 	clientSubscriptionLock.Lock()
 	defer clientSubscriptionLock.Unlock()
-	if s.Subscriptions[workspaceKey] == nil {
-		s.Subscriptions[workspaceKey] = make(map[int]map[*websocket.Conn]bool)
-	}
-
-	if s.Subscriptions[workspaceKey][channelKey] == nil {
-		s.Subscriptions[workspaceKey][channelKey] = make(map[*websocket.Conn]bool)
+	if s.Subscriptions[chatId] == nil {
+		s.Subscriptions[chatId] = make(map[*websocket.Conn]bool)
 	}
 
 	// Agrergo la conexion websocket al mapa de conexiones
-	s.Subscriptions[workspaceKey][channelKey][ws] = true
+	s.Subscriptions[chatId][ws] = true
 }
 
-func (s *Subscriptor) Unsubscribe(ws *websocket.Conn, workspaceKey string, channelKey int) {
+func (s *Subscriptor) Unsubscribe(ws *websocket.Conn, chatId int) {
 	// Protejo la des subscripcion de un cliente a un canal
 	clientSubscriptionLock.Lock()
 	defer clientSubscriptionLock.Unlock()
-	if s.Subscriptions[workspaceKey] == nil {
-		return
-	}
-
-	if s.Subscriptions[workspaceKey][channelKey] == nil {
+	if s.Subscriptions[chatId] == nil {
 		return
 	}
 
 	// Elimino la conexion websocket del mapa de conexiones
-	delete(s.Subscriptions[workspaceKey][channelKey], ws)
+	delete(s.Subscriptions[chatId], ws)
 }
 
-func (s *Subscriptor) GetSubscriptions(workspaceKey string, channelKey int) map[*websocket.Conn]bool {
+func (s *Subscriptor) GetSubscriptions(chatId int) map[*websocket.Conn]bool {
 	// Protejo la obtencion de las conexiones websocket suscriptas a un canal
 	clientSubscriptionLock.Lock()
 	defer clientSubscriptionLock.Unlock()
-	return s.Subscriptions[workspaceKey][channelKey]
+	return s.Subscriptions[chatId]
 }

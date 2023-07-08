@@ -3,11 +3,10 @@ package message
 import "gochat/src/connections/database"
 
 type Message struct {
-	Id           int    `json:"id"`
-	WorkspaceKey string `json:"workspaceKey"`
-	ChannelKey   int    `json:"channelKey"`
-	Message      string `json:"message"`
-	UserId       int    `json:"userId"`
+	Id      int    `json:"id"`
+	ChatId  int    `json:"chatId"`
+	Message string `json:"message"`
+	UserId  int    `json:"userId"`
 }
 
 type MessageInterface interface {
@@ -26,10 +25,10 @@ func (message Message) Save() error {
 	defer conn.Close()
 
 	query := `
-	INSERT INTO channel_messages (channel_id, user_id, message) 
+	INSERT INTO chat_messages (chat_id, user_id, message) 
 	VALUES (?, ?, ?)`
 
-	_, err := (*conn).Exec(query, message.ChannelKey, message.UserId, message.Message)
+	_, err := (*conn).Exec(query, message.ChatId, message.UserId, message.Message)
 
 	return err
 }

@@ -1,6 +1,7 @@
 package message
 
 import (
+	"gochat/src/models/chat"
 	"gochat/src/models/message"
 	"gochat/src/models/message/subscription"
 	"gochat/src/models/request"
@@ -22,8 +23,17 @@ func HandlerMessages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Obtengo la WorkspaceKey y el ChannelKey de la request
-	workspaceKey := mux.Vars(r)["workspaceKey"]
+	//TODO add validation for workspaceKey and channelKey
+	//workspaceKey := mux.Vars(r)["workspaceKey"]
 	channelKey, _ := strconv.Atoi(mux.Vars(r)["channelKey"])
+	dmKey, _ := strconv.Atoi(mux.Vars(r)["dmKey"])
+
+	chatId, err := chat.Resolve(channelKey, dmKey)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	// TODO: Validar que el usuario pertenezca a la workspace y al canal
 	// TODO: Obtener el ChatKey a partir de la WorkspaceKey y el ChannelKey
@@ -38,7 +48,7 @@ func HandlerMessages(w http.ResponseWriter, r *http.Request) {
 	// TODO: La subcripcion se tiene que hacer con el ChatKey, NO con el WorkspaceKey y el ChannelKey
 	// Subscribo la conexion websocket al canal correspondiente
 	subscriptor := subscription.GetSubscriptionInstance()
-	subscriptor.Subscribe(ws, workspaceKey, channelKey)
+	subscriptor.Subscribe(ws, chatId)
 
 	for {
 		var msg message.Message
@@ -46,14 +56,13 @@ func HandlerMessages(w http.ResponseWriter, r *http.Request) {
 		// Leo el mensaje recibido
 		err := ws.ReadJSON(&msg)
 		if err != nil {
-			subscriptor.Unsubscribe(ws, workspaceKey, channelKey)
+			subscriptor.Unsubscribe(ws, chatId)
 			return
 		}
 
 		// TODO: Lo mismo que arriba. Se tiene que usar el ChatKey
 		// Agrego la WorkspaceKey y el ChannelKey al mensaje
-		msg.WorkspaceKey = workspaceKey
-		msg.ChannelKey = channelKey
+		msg.ChatId = chatId
 		msg.UserId = userRequest.GetUserId()
 
 		// save the message in the database
