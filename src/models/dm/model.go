@@ -16,7 +16,7 @@ type DMInterface interface {
 
 	Authenticate() bool
 	Exists() (bool, error)
-	//HasMember() (bool, error)
+	IsMember(userId int) (bool, error)
 }
 
 type DM struct {
@@ -26,7 +26,7 @@ type DM struct {
 
 // DM Model to be returned to client
 type ClientDM struct {
-	Id          string
+	Id          int
 	WorkspaceId int
 }
 
@@ -79,7 +79,6 @@ func (dm DM) Create(senderId, receiverId int) error {
 	if err != nil {
 		return err
 	}
-	print("senderRelationship created")
 
 	// Crear relación de usuario receptor
 	receiverRelationship := userDMRelationship.UserDMRelationship{
@@ -90,7 +89,6 @@ func (dm DM) Create(senderId, receiverId int) error {
 	if err != nil {
 		return err
 	}
-	print("receiverRelationship created")
 
 	return nil
 }
@@ -152,7 +150,7 @@ func (dm DM) Exists() (bool, error) {
 	return true, nil
 }
 
-func GetDMsByWorkspaceId(workspaceId int) ([]ClientDM, error) {
+func GetDMsByWorkspaceId(workspaceId, userId int) ([]ClientDM, error) {
 
 	dms := make([]ClientDM, 0)
 
@@ -173,43 +171,16 @@ func GetDMsByWorkspaceId(workspaceId int) ([]ClientDM, error) {
 	for rows.Next() {
 		var dm ClientDM
 		if err := rows.Scan(&dm.Id, &dm.WorkspaceId); err == nil {
-			dms = append(dms, dm)
+			// Verificar si el usuario es miembro del DM
+			if isMember, err := dm.IsMember(userId); err == nil && isMember {
+				dms = append(dms, dm)
+			}
 		} else {
 			println(err.Error())
 		}
 	}
 	return dms, nil
 }
-
-/*
-func GetDMsByUserAndWorkspace(user_id int, workspaceId int) ([]DM, error) {
-	conn := database.GetConnection()
-	defer conn.Close()
-
-	query := `
-	SELECT id, workspace_id
-	FROM dms
-	INNER JOIN user_dms ON id = user_dms.dm_id
-	WHERE user_dms.user_id = ? AND workspace_id = ?`
-
-	rows, err := (*conn).Query(query, user_id, workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var dms []DM
-	for rows.Next() {
-		var dm DM
-		if err := rows.Scan(&dm.Id, &dm.WorkspaceId); err != nil {
-			return nil, err
-		}
-		dms = append(dms, dm)
-	}
-
-	return dms, nil
-}
-*/
 
 func (dm DM) Join(userId int) error {
 	conn := database.GetConnection()
@@ -248,10 +219,10 @@ func (dm DM) GetMembers() ([]user.UserClient, error) {
 	return relationship.GetMembers()
 }
 
-func (dm DM) IsMember(userId int) (bool, error) {
+func (dm ClientDM) IsMember(userId int) (bool, error) {
 	relationship := userDMRelationship.UserDMRelationship{
 		UserId: userId,
-		DMId:   dm.Id,
+		DMId:  dm.Id,
 	}
 	return relationship.Exists(), nil
 }

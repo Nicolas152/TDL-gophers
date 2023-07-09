@@ -51,7 +51,8 @@ func GetUserIDByEmail(email string) (int, error) {
     query := "SELECT id FROM users WHERE email = ?"
     err := conn.QueryRow(query, email).Scan(&userID)
     if err != nil {
-        return 0, err
+		errMsg := fmt.Sprintf("Email do not exists in workspace: %v", err)
+        return 0, errors.New(errMsg)
     }
 
     return userID, nil

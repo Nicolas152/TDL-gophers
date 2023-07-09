@@ -21,10 +21,11 @@ func GetDMsByWorkspace(userId int, workspaceKey string) ([]byte, error, int) {
 		return nil, err, statusErr
 	}
 
-	dms, err := dm.GetDMsByWorkspaceId(workspaceModel.Id)
+	dms, err := dm.GetDMsByWorkspaceId(workspaceModel.Id, userId)
 	if err != nil {
 		return nil, errors.New("Error getting dms: " + err.Error()), http.StatusInternalServerError
 	}
+
 
 	dmsJson, err := json.Marshal(dms)
 	if err != nil {
