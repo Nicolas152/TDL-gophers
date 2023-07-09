@@ -59,7 +59,7 @@ func GetDM(id int, workspaceKey string, userId int) ([]byte, error, int) {
 	return dmJson, err, 0
 }
 
-// channelValidations performs validations to determine if the user has access to the workspace.
+// DM Validations performs validations to determine if the user has access to the workspace.
 // It returns an error and a corresponding HTTP status code based on the validation results.
 func DMValidations(workspaceModel workspace.Workspace, userId int) (error, int) {
 	if workspaceModel.Id == 0 {

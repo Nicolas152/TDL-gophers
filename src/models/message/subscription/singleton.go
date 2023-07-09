@@ -6,13 +6,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Lock que protege la creacion de la instancia
+// Lock that protects the creation of the instance
 var subscriptionInstanceLock = &sync.Mutex{}
 
-// Referencia a la instancia de subcriptor
+// Reference to the subscriber instance
 var subscriptionInstance *Subscriptor
 
-// Singleton que devuelve la instancia de subcriptor
+// Singleton that returns the subscriber instance
 func GetSubscriptionInstance() *Subscriptor {
 	if subscriptionInstance == nil {
 		subscriptionInstanceLock.Lock()
