@@ -30,7 +30,7 @@ func HandlerMessages(w http.ResponseWriter, r *http.Request) {
 	channelKey, _ := strconv.Atoi(mux.Vars(r)["channelKey"])
 	dmKey, _ := strconv.Atoi(mux.Vars(r)["dmKey"])
 
-	err := validateChat(workspaceKey, channelKey, dmKey, *userRequest.UserId)
+	err := validateChat(workspaceKey, channelKey, dmKey, userRequest.GetUserId())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
