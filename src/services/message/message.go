@@ -73,8 +73,8 @@ func HandlerMessages(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			println(err.Error())
 		} else {
-			msg.Name = user.Name
-			msg.Email = user.Email
+			msg.UserName = user.Name
+			msg.UserEmail = user.Email
 		}
 
 		// Save the message in the database

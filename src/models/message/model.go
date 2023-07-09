@@ -3,12 +3,19 @@ package message
 import "gochat/src/connections/database"
 
 type Message struct {
-	Id      int    `json:"id"`
-	ChatId  int    `json:"chatId"`
-	Message string `json:"message"`
-	UserId  int    `json:"userId"`
-	Email   string `json:"email"`
-	Name    string `json:"name"`
+	Id        int    `json:"id"`
+	ChatId    int    `json:"chatId"`
+	Message   string `json:"message"`
+	UserId    int    `json:"userId"`
+	UserEmail string `json:"userEmail"`
+	UserName  string `json:"userName"`
+}
+
+type ClientMessage struct {
+	Message   string `json:"message"`
+	UserEmail string `json:"userEmail"`
+	UserName  string `json:"userName"`
+	CreatedAt string `json:"createdAt"`
 }
 
 type MessageInterface interface {
