@@ -2,16 +2,17 @@ package authentication
 
 import (
 	"errors"
-	"github.com/dgrijalva/jwt-go"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 type JWTToken struct {
-	UserId 	int 	`json:"userId"`
-	Email 	string 	`json:"email"`
-	Name 	string 	`json:"name"`
+	UserId int    `json:"userId"`
+	Email  string `json:"email"`
+	Name   string `json:"name"`
 	jwt.StandardClaims
 }
 
@@ -22,18 +23,18 @@ func GetJWTHeader(r *http.Request) string {
 }
 
 func CreateJWTHeader(userId int, email string, name string) (string, error) {
-	// Creo los claims
+	// Create the Claims with 24 hours of expiration time
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := JWTToken{
 		UserId: userId,
-		Email: email,
-		Name: name,
+		Email:  email,
+		Name:   name,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
 	}
 
-	// Creo el token con los claims
+	// Create the JWT token with the claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte("super-secretKey"))
 	if err != nil {
@@ -62,4 +63,3 @@ func GetJWTUserId(jwtToken string) (int, error) {
 
 	return 0, errors.New("Invalid JWT token")
 }
-

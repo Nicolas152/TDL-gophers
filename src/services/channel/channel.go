@@ -17,7 +17,7 @@ func GetChannelsByWorkspace(workspaceKey string, userId int) ([]byte, error, int
 		return nil, errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := channelValidations(workspaceModel, userId); err != nil {
+	if err, statusErr := ChannelValidations(workspaceModel, userId); err != nil {
 		return nil, err, statusErr
 	}
 
@@ -34,9 +34,35 @@ func GetChannelsByWorkspace(workspaceKey string, userId int) ([]byte, error, int
 	return channelsJson, err, 0
 }
 
-// channelValidations performs validations to determine if the user has access to the workspace.
+func GetChannel(id int, workspaceKey string, userId int) ([]byte, error, int) {
+
+	// validate if workspaceModel exists
+	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
+	if err != nil {
+		return nil, errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
+	}
+
+	if err, statusErr := ChannelValidations(workspaceModel, userId); err != nil {
+		return nil, err, statusErr
+	}
+
+	channelModel := channel.Channel{WorkspaceId: workspaceModel.Id, Id: id}
+	channelModel, err = channelModel.Get()
+	if err != nil {
+		return nil, errors.New("Could not get channel. Reason:" + err.Error()), http.StatusBadRequest
+	}
+
+	channelJson, err := json.Marshal(channelModel)
+	if err != nil {
+		return nil, errors.New("Error marshalling channel: " + err.Error()), http.StatusInternalServerError
+	}
+
+	return channelJson, err, 0
+}
+
+// ChannelValidations performs validations to determine if the user has access to the workspace.
 // It returns an error and a corresponding HTTP status code based on the validation results.
-func channelValidations(workspaceModel workspace.Workspace, userId int) (error, int) {
+func ChannelValidations(workspaceModel workspace.Workspace, userId int) (error, int) {
 
 	if workspaceModel.Id == 0 {
 		return errors.New("Workspace does not exists"), http.StatusBadRequest
@@ -62,7 +88,7 @@ func CreateChannel(name string, password string, workspaceKey string, userId int
 		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := channelValidations(workspaceModel, userId); err != nil {
+	if err, statusErr := ChannelValidations(workspaceModel, userId); err != nil {
 		return err, statusErr
 	}
 	// create channel
@@ -82,7 +108,7 @@ func UpdateChannel(id int, name string, password string, workspaceKey string, us
 		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := channelValidations(workspaceModel, userId); err != nil {
+	if err, statusErr := ChannelValidations(workspaceModel, userId); err != nil {
 		return err, statusErr
 	}
 
@@ -115,7 +141,7 @@ func DeleteChannel(id int, workspaceKey string, userId int) (error, int) {
 		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := channelValidations(workspaceModel, userId); err != nil {
+	if err, statusErr := ChannelValidations(workspaceModel, userId); err != nil {
 		return err, statusErr
 	}
 
@@ -146,7 +172,7 @@ func JoinToChannel(id int, password string, workspaceKey string, userId int) (er
 		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := channelValidations(workspaceModel, userId); err != nil {
+	if err, statusErr := ChannelValidations(workspaceModel, userId); err != nil {
 		return err, statusErr
 	}
 
@@ -177,7 +203,7 @@ func MembersOfChannel(id int, workspaceKey string, userId int) ([]byte, error, i
 		return nil, errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := channelValidations(workspaceModel, userId); err != nil {
+	if err, statusErr := ChannelValidations(workspaceModel, userId); err != nil {
 		return nil, err, statusErr
 	}
 
@@ -214,7 +240,7 @@ func LeaveChannel(id int, workspaceKey string, userId int) (error, int) {
 		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := channelValidations(workspaceModel, userId); err != nil {
+	if err, statusErr := ChannelValidations(workspaceModel, userId); err != nil {
 		return err, statusErr
 	}
 
@@ -240,7 +266,7 @@ func Messages(id int, workspaceKey string, userId int) ([]byte, error, int) {
 		return nil, errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
 	}
 
-	if err, statusErr := channelValidations(workspaceModel, userId); err != nil {
+	if err, statusErr := ChannelValidations(workspaceModel, userId); err != nil {
 		return nil, err, statusErr
 	}
 
