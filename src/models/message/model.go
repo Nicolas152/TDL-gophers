@@ -7,6 +7,8 @@ type Message struct {
 	ChatId  int    `json:"chatId"`
 	Message string `json:"message"`
 	UserId  int    `json:"userId"`
+	Email   string `json:"email"`
+	Name    string `json:"name"`
 }
 
 type MessageInterface interface {

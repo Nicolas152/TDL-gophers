@@ -6,6 +6,7 @@ import (
 	"gochat/src/models/message"
 	"gochat/src/models/message/subscription"
 	"gochat/src/models/request"
+	"gochat/src/models/user"
 	"gochat/src/services/channel"
 	"gochat/src/services/dm"
 	"net/http"
@@ -68,6 +69,13 @@ func HandlerMessages(w http.ResponseWriter, r *http.Request) {
 		// Add the WorkspaceKey and ChannelKey to the message
 		msg.ChatId = chatId
 		msg.UserId = userRequest.GetUserId()
+		user, err := user.GetUserById(msg.UserId)
+		if err != nil {
+			println(err.Error())
+		} else {
+			msg.Name = user.Name
+			msg.Email = user.Email
+		}
 
 		// Save the message in the database
 		err = msg.Save()
