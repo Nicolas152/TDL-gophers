@@ -34,18 +34,16 @@ func DefaultConfig() *Config {
 }
 
 func GetConfig() *Config {
-	// TODO: Investigar si no hay otro forma de setear la configuracion por defecto
 	cfg := DefaultConfig()
 
-	// TODO: No es correcto que cada vez que se quiera acceder a la config, se tenga que leer el archivo
-	// Leo el archivo de configuracion
+	// Read the config file
 	file, err := os.ReadFile("src/config/local.yaml")
 	if err != nil {
 		log.Printf("Error al leer el archivo de configuracion: %v", err.Error())
 		return cfg
 	}
 
-	// Parseo el archivo de configuracion
+	// Parse the config file
 	err = yaml.Unmarshal(file, &cfg)
 	if err != nil {
 		log.Printf("Error al parsear el archivo de configuracion: %v", err)

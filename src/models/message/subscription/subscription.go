@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Lock que protege la subcripcion de un cliente a un canal
+// Lock that protects the creation of the instance
 var clientSubscriptionLock = &sync.Mutex{}
 
 type SubscriptorInterface struct {
@@ -15,37 +15,36 @@ type SubscriptorInterface struct {
 	GetSubscriptions func()
 }
 
-// TODO: Tiene que ser solo un map de un nivel.
 type Subscriptor struct {
 	Subscriptions map[int]map[*websocket.Conn]bool
 }
 
 func (s *Subscriptor) Subscribe(ws *websocket.Conn, chatId int) {
-	// Protejo la subscripcion de un cliente a un canal
+	// Protect the subscription of a client to a channel
 	clientSubscriptionLock.Lock()
 	defer clientSubscriptionLock.Unlock()
 	if s.Subscriptions[chatId] == nil {
 		s.Subscriptions[chatId] = make(map[*websocket.Conn]bool)
 	}
 
-	// Agrergo la conexion websocket al mapa de conexiones
+	// Add the websocket connection to the map of connections
 	s.Subscriptions[chatId][ws] = true
 }
 
 func (s *Subscriptor) Unsubscribe(ws *websocket.Conn, chatId int) {
-	// Protejo la des subscripcion de un cliente a un canal
+	// Protect the unsubscription of a client to a channel
 	clientSubscriptionLock.Lock()
 	defer clientSubscriptionLock.Unlock()
 	if s.Subscriptions[chatId] == nil {
 		return
 	}
 
-	// Elimino la conexion websocket del mapa de conexiones
+	// Delete the websocket connection from the map of connections
 	delete(s.Subscriptions[chatId], ws)
 }
 
 func (s *Subscriptor) GetSubscriptions(chatId int) map[*websocket.Conn]bool {
-	// Protejo la obtencion de las conexiones websocket suscriptas a un canal
+	// Protect the access to the map of connections
 	clientSubscriptionLock.Lock()
 	defer clientSubscriptionLock.Unlock()
 	return s.Subscriptions[chatId]

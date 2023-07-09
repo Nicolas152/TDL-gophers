@@ -75,13 +75,14 @@ func Resolve(channelId int, dmId int) (int, error) {
 	return id, nil
 }
 
-func GetMessages(id int) ([]message.Message, error) {
+func GetMessages(id int) ([]message.ClientMessage, error) {
 	conn := database.GetConnection()
 	defer conn.Close()
 
 	query := `
-	SELECT user_id, message
-	FROM chat_messages
+	SELECT message, cm.created_at, u.email, u.name
+	FROM chat_messages cm
+	INNER JOIN users u ON cm.user_id = u.id
 	WHERE chat_id = ?`
 
 	rows, err := (*conn).Query(query, id)
@@ -90,10 +91,10 @@ func GetMessages(id int) ([]message.Message, error) {
 	}
 	defer rows.Close()
 
-	messages := make([]message.Message, 0)
+	messages := make([]message.ClientMessage, 0)
 	for rows.Next() {
-		var message message.Message
-		if err := rows.Scan(&message.UserId, &message.Message); err != nil {
+		var message message.ClientMessage
+		if err := rows.Scan(&message.Message, &message.CreatedAt, &message.UserEmail, &message.UserName); err != nil {
 			return nil, err
 		}
 

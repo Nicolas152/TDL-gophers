@@ -26,7 +26,6 @@ type UserClient struct {
 }
 
 func GetUserById(id int) (User, error) {
-	// Obtengo un usuario por id
 	conn := database.GetConnection()
 	defer conn.Close()
 
@@ -44,23 +43,21 @@ func GetUserById(id int) (User, error) {
 }
 
 func GetUserIDByEmail(email string) (int, error) {
-    conn := database.GetConnection()
-    defer conn.Close()
+	conn := database.GetConnection()
+	defer conn.Close()
 
-    var userID int
-    query := "SELECT id FROM users WHERE email = ?"
-    err := conn.QueryRow(query, email).Scan(&userID)
-    if err != nil {
+	var userID int
+	query := "SELECT id FROM users WHERE email = ?"
+	err := conn.QueryRow(query, email).Scan(&userID)
+	if err != nil {
 		errMsg := fmt.Sprintf("Email do not exists in workspace: %v", err)
-        return 0, errors.New(errMsg)
-    }
+		return 0, errors.New(errMsg)
+	}
 
-    return userID, nil
+	return userID, nil
 }
 
-
 func Get() []User {
-	// Obtengo todos los usuarios de DB
 	users := make([]User, 0)
 
 	conn := database.GetConnection()
@@ -80,16 +77,16 @@ func Get() []User {
 
 }
 
-// Manejo de usuarios
+// user handler
 
 func (user User) Authenticate() bool {
 	var count int
 
-	// Autentico el usuario en DB
+	// Autenticates user
 	conn := database.GetConnection()
 	defer conn.Close()
 
-	// Valido que email y password sea correcto
+	// check the email and password
 	result := (*conn).QueryRow("SELECT COUNT(*) FROM users WHERE email = ? AND password = ?", user.Email, user.Password)
 	if err := result.Scan(&count); err != nil || count == 0 {
 		return false
@@ -99,7 +96,6 @@ func (user User) Authenticate() bool {
 }
 
 func (user *User) GetContext() error {
-	// Obtengo el contexto del usuario
 	conn := database.GetConnection()
 	defer conn.Close()
 
@@ -120,7 +116,6 @@ func (user *User) GetContext() error {
 }
 
 func (user User) Create() error {
-	// Creo el usuario en DB
 	conn := database.GetConnection()
 	defer conn.Close()
 
