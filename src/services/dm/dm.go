@@ -34,6 +34,31 @@ func GetDMsByWorkspace(userId int, workspaceKey string) ([]byte, error, int) {
 	return dmsJson, err, 0
 }
 
+func GetDM(id int, workspaceKey string, userId int) ([]byte, error, int) {
+	// validate if workspaceModel exists
+	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
+	if err != nil {
+		return nil, errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
+	}
+
+	if err, statusErr := DMValidations(workspaceModel, userId); err != nil {
+		return nil, err, statusErr
+	}
+
+	dmModel := dm.DM{WorkspaceId: workspaceModel.Id, Id: id}
+	dmModel, err = dmModel.Get()
+	if err != nil {
+		return nil, errors.New("Could not get dm. Reason:" + err.Error()), http.StatusBadRequest
+	}
+
+	dmJson, err := json.Marshal(dmModel)
+	if err != nil {
+		return nil, errors.New("Error marshalling dm: " + err.Error()), http.StatusInternalServerError
+	}
+
+	return dmJson, err, 0
+}
+
 // channelValidations performs validations to determine if the user has access to the workspace.
 // It returns an error and a corresponding HTTP status code based on the validation results.
 func DMValidations(workspaceModel workspace.Workspace, userId int) (error, int) {
