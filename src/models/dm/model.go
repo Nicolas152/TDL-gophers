@@ -5,6 +5,7 @@ import (
 	"gochat/src/connections/database"
 	"gochat/src/models/chat"
 	"gochat/src/models/dm/userDMRelationship"
+	"gochat/src/models/user"
 )
 
 type DMInterface interface {
@@ -25,8 +26,8 @@ type DM struct {
 
 // DM Model to be returned to client
 type ClientDM struct {
-	Id          int
-	WorkspaceId int
+	Id   int
+	User user.UserClient
 }
 
 func (dm DM) Get() (DM, error) {
@@ -157,11 +158,13 @@ func GetDMsByWorkspaceId(workspaceId, userId int) ([]ClientDM, error) {
 	defer conn.Close()
 
 	query := `
-	SELECT id, workspace_id
+	SELECT dms.id, u.id, u.email, u.name
 	FROM dms
+	INNER JOIN user_dms AS udmr ON udmr.dm_id = dms.id
+	INNER JOIN users AS u ON u.id = udmr.user_id AND u.id != ?
 	WHERE workspace_id = ?`
 
-	rows, err := (*conn).Query(query, workspaceId)
+	rows, err := (*conn).Query(query, userId, workspaceId)
 	if err != nil {
 		return nil, err
 	}
@@ -169,11 +172,8 @@ func GetDMsByWorkspaceId(workspaceId, userId int) ([]ClientDM, error) {
 
 	for rows.Next() {
 		var dm ClientDM
-		if err := rows.Scan(&dm.Id, &dm.WorkspaceId); err == nil {
-			// Verificar si el usuario es miembro del DM
-			if isMember, err := dm.IsMember(userId); err == nil && isMember {
-				dms = append(dms, dm)
-			}
+		if err := rows.Scan(&dm.Id, &dm.User.Id, &dm.User.Email, &dm.User.Name); err == nil {
+			dms = append(dms, dm)
 		} else {
 			println(err.Error())
 		}
@@ -184,7 +184,7 @@ func GetDMsByWorkspaceId(workspaceId, userId int) ([]ClientDM, error) {
 func (dm ClientDM) IsMember(userId int) (bool, error) {
 	relationship := userDMRelationship.UserDMRelationship{
 		UserId: userId,
-		DMId:  dm.Id,
+		DMId:   dm.Id,
 	}
 	return relationship.Exists(), nil
 }
