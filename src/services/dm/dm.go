@@ -113,64 +113,6 @@ func CreateDM(workspaceKey string, senderID int, receiverEmail string) (error, i
 	return nil, 0
 }
 
-func LeaveDM(id int, workspaceKey string, userId int) (error, int) {
-	// validate if workspaceModel exists
-	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
-	if err != nil {
-		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
-	}
-
-	if err, statusErr := DMValidations(workspaceModel, userId); err != nil {
-		return nil, statusErr
-	}
-
-	dmModel := dm.DM{
-		Id:          id,
-		WorkspaceId: workspaceModel.Id,
-	}
-
-	dmModel, err = dmModel.Get()
-	if err != nil {
-		return errors.New("Could not leave DM. Reason:" + err.Error()), http.StatusBadRequest
-	}
-
-	//leave dm
-	if err := dmModel.Leave(userId); err != nil {
-		return errors.New("Error leaving DM: " + err.Error()), http.StatusInternalServerError
-	}
-
-	return nil, 0
-}
-
-func JoinDM(id int, workspaceKey string, userId int) (error, int) {
-	// validate if workspaceModel exists
-	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
-	if err != nil {
-		return errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
-	}
-
-	if err, statusErr := DMValidations(workspaceModel, userId); err != nil {
-		return nil, statusErr
-	}
-
-	dmModel := dm.DM{
-		Id:          id,
-		WorkspaceId: workspaceModel.Id,
-	}
-
-	dmModel, err = dmModel.Get()
-	if err != nil {
-		return errors.New("Could not join DM. Reason:" + err.Error()), http.StatusBadRequest
-	}
-
-	//join dm
-	if err := dmModel.Join(userId); err != nil {
-		return errors.New("Error joining DM: " + err.Error()), http.StatusInternalServerError
-	}
-
-	return nil, 0
-}
-
 func Messages(id int, workspaceKey string, userId int) ([]byte, error, int) {
 
 	// validate if workspaceModel exists
@@ -196,39 +138,3 @@ func Messages(id int, workspaceKey string, userId int) ([]byte, error, int) {
 
 	return messagesJson, nil, 0
 }
-
-/*
-func MembersOfDM(id int, workspaceKey string, userId int) ([]byte, error, int) {
-	// validate if workspaceModel exists
-	workspaceModel, err := workspace.GetWorkspaceByKey(workspaceKey)
-	if err != nil {
-		return nil, errors.New("Error validating workspace: " + err.Error()), http.StatusInternalServerError
-	}
-
-	if err, statusErr := DMValidations(workspaceModel, userContext); err != nil {
-		return nil, err, statusErr
-	}
-
-	dmModel := dm.DM{
-		Id: id,
-		WorkspaceId: workspaceModel.Id,
-	}
-
-	dmModel, err = dmModel.Get()
-	if err != nil {
-		return nil, errors.New("Could not get members of DM. Reason:" + err.Error()), http.StatusBadRequest
-	}
-
-	members, err := dmModel.GetMembers()
-	if err != nil {
-		return nil, errors.New("Error getting members of DM: " + err.Error()), http.StatusInternalServerError
-	}
-
-	membersJson, err := json.Marshal(members)
-	if err != nil {
-		return nil, errors.New("Error marshalling members of DM: " + err.Error()), http.StatusInternalServerError
-	}
-
-	return membersJson, err, 0
-}
-*/

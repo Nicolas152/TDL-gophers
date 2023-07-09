@@ -5,7 +5,6 @@ import (
 	"gochat/src/connections/database"
 	"gochat/src/models/chat"
 	"gochat/src/models/dm/userDMRelationship"
-	"gochat/src/models/user"
 )
 
 type DMInterface interface {
@@ -180,43 +179,6 @@ func GetDMsByWorkspaceId(workspaceId, userId int) ([]ClientDM, error) {
 		}
 	}
 	return dms, nil
-}
-
-func (dm DM) Join(userId int) error {
-	conn := database.GetConnection()
-	defer conn.Close()
-
-	relationship := userDMRelationship.UserDMRelationship{
-		UserId: userId,
-		DMId:   dm.Id,
-	}
-
-	if relationship.Exists() {
-		return nil
-	}
-
-	return relationship.Create()
-}
-
-func (dm DM) Leave(userId int) error {
-	conn := database.GetConnection()
-	defer conn.Close()
-
-	relationship := userDMRelationship.UserDMRelationship{
-		UserId: userId,
-		DMId:   dm.Id,
-	}
-
-	if !relationship.Exists() {
-		return nil
-	}
-
-	return relationship.Delete()
-}
-
-func (dm DM) GetMembers() ([]user.UserClient, error) {
-	relationship := userDMRelationship.UserDMRelationship{DMId: dm.Id}
-	return relationship.GetMembers()
 }
 
 func (dm ClientDM) IsMember(userId int) (bool, error) {

@@ -16,8 +16,6 @@ func AddDMController(myRouter *mux.Router) {
 	// Get dms by workspace
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm", middlewares.AuthenticationMiddleware(getDMsByWorkspace)).Methods("GET")
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm", middlewares.AuthenticationMiddleware(createDM)).Methods("POST")
-	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm/{id}/join", middlewares.AuthenticationMiddleware(joinToDM)).Methods("POST")
-	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm/{id}/leave", middlewares.AuthenticationMiddleware(leaveDM)).Methods("POST")
 	myRouter.HandleFunc("/gophers/workspace/{workspaceKey}/dm/{id}/messages", middlewares.AuthenticationMiddleware(messagesDM)).Methods("GET")
 }
 
@@ -71,60 +69,6 @@ func createDM(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("DM created successfully"))
-}
-
-func joinToDM(w http.ResponseWriter, r *http.Request) {
-	// Cargo la request del cliente
-	var userRequest request.UserRequest
-	if err := userRequest.ReadRequest(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// get workspaceKey from URL
-	vars := mux.Vars(r)
-	workspaceKey := vars["workspaceKey"]
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		http.Error(w, "Invalid id", http.StatusBadRequest)
-		return
-	}
-
-	err, statusErr := dm.JoinDM(id, workspaceKey, userRequest.GetUserId())
-
-	if err != nil {
-		http.Error(w, err.Error(), statusErr)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("DM joined successfully"))
-}
-
-func leaveDM(w http.ResponseWriter, r *http.Request) {
-	// Cargo la request del cliente
-	var userRequest request.UserRequest
-	if err := userRequest.ReadRequest(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// get workspaceKey from URL
-	vars := mux.Vars(r)
-	workspaceKey := vars["workspaceKey"]
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		http.Error(w, "Invalid id", http.StatusBadRequest)
-		return
-	}
-
-	err, statusErr := dm.LeaveDM(id, workspaceKey, userRequest.GetUserId())
-
-	if err != nil {
-		http.Error(w, err.Error(), statusErr)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("DM left successfully"))
 }
 
 func messagesDM(w http.ResponseWriter, r *http.Request) {
