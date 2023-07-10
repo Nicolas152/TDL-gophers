@@ -173,7 +173,9 @@ func GetDMsByWorkspaceId(workspaceId, userId int) ([]ClientDM, error) {
 	for rows.Next() {
 		var dm ClientDM
 		if err := rows.Scan(&dm.Id, &dm.User.Id, &dm.User.Email, &dm.User.Name); err == nil {
-			dms = append(dms, dm)
+			if isMember, err := dm.IsMember(userId); err == nil && isMember {
+				dms = append(dms, dm)
+			}
 		} else {
 			println(err.Error())
 		}
