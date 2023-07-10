@@ -43,6 +43,7 @@ func getChannelsByWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(channels)
 }
 
@@ -177,6 +178,8 @@ func membersOfChannel(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), statusErr)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(members)
 }

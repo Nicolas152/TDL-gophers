@@ -11,10 +11,8 @@ import (
 type DMInterface interface {
 	Get() (DM, error)
 	Create() error
-	Update() error
 	Delete() error
 
-	Authenticate() bool
 	Exists() (bool, error)
 	IsMember(userId int) (bool, error)
 }
@@ -159,12 +157,12 @@ func GetDMsByWorkspaceId(workspaceId, userId int) ([]ClientDM, error) {
 
 	query := `
 	SELECT dms.id, u.id, u.email, u.name
-	FROM dms
+	FROM (SELECT dms.id, dms.workspace_id FROM dms INNER JOIN user_dms ud on dms.id = ud.dm_id WHERE user_id = ?) AS dms
 	INNER JOIN user_dms AS udmr ON udmr.dm_id = dms.id
 	INNER JOIN users AS u ON u.id = udmr.user_id AND u.id != ?
 	WHERE workspace_id = ?`
 
-	rows, err := (*conn).Query(query, userId, workspaceId)
+	rows, err := (*conn).Query(query, userId, userId, workspaceId)
 	if err != nil {
 		return nil, err
 	}
