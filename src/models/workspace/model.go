@@ -200,9 +200,6 @@ func (workspace Workspace) HasMember(userId int) (bool, error) {
 	conn := database.GetConnection()
 	defer conn.Close()
 
-	// print userId, workspace.Id
-	println(userId, workspace.Id)
-
 	result := (*conn).QueryRow("SELECT id FROM user_workspace WHERE user_id = ? AND workspace_id = ?", userId, workspace.Id)
 
 	var id int
