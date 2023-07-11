@@ -36,22 +36,12 @@ Para construir el proyecto se debe ejecutar el siguiente comando:
 go build -o gophers
 ```
 
-### Models (no estoy seguro del nombre, lo puedes modificar jesus)
+### API
 
 #### Authentication
 
-Para la autenticación se hace uso de JWT. Para ello se hace uso de dos endpoints:
-
-##### Login
-
-Para obtener el token de autenticación se debe hacer una petición POST al endpoint `/gophers/login` con el siguiente body:
-
-```json
-{
-    "email": "your-email",
-    "password": "your-password"
-}
-```
+Es importante mencionar que para poder hacer uso de los endpoints de la API es necesario estar autenticado.
+Para ello es necesario primero crear un usuario y luego hacer login para obtener el token de autenticación.
 
 ##### Signin
 
@@ -65,10 +55,51 @@ Para crear un nuevo usuario se debe hacer una petición POST al endpoint `/gophe
 }
 ```
 
-#### Users
 
+##### Login
+
+Para obtener el token de autenticación se debe hacer una petición POST al endpoint `/gophers/login` con el siguiente body:
+
+```json
+{
+    "email": "your-email",
+    "password": "your-password"
+}
+```
+
+Si el login se realizo correctamente, se deberia obtener una respuesta con el siguiente 
+formato:
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsImVtYWlsIjoiamVzdXNAZ21haWwuY29tIiwibmFtZSI6Inlpc3VzIiwiZXhwIjoxNjg5MTIzNDUwfQ.zkKp2GdFczRtsMGE3if1akHuNE8qB-Gga54S5kW33cE"
+}
+```
+
+Este token debe ser enviado en el header de autenticación de todas las peticiones que se 
+hagan a la API.
+
+```bash
+curl --location --request GET 'http://localhost:8080/gophers/example_endpoint' \
+--header 'Authorization: Bearer <token>'
+```
 
 #### Workspaces
+
+Los workspaces son los espacios de trabajo en los cuales se encuentran los canales y los usuarios.
+Todo usuario debe pertenecer a al menos un workspace para poder interactuar con los canales y 
+los usuarios.
+
+##### Endpoints
+
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| GET | /gophers/workspace | Obtiene todos los workspaces |
+| POST | /gophers/workspace | Crea un nuevo workspace |
+| PUT | /gophers/workspace/{key} | Actualiza un workspace por su key |
+| DELETE | /gophers/workspace/{key} | Elimina un workspace por su key |
+| POST | /gophers/workspace/{key}/join | Permite unirse a un workspace por su key |
+
 
 
 #### Channels
@@ -93,7 +124,38 @@ Estos son los canales que se encuentran dentro de un workspace, los cuales puede
 
 #### Direct Messages (DMs)
 
+Los DMs son los mensajes directos que se pueden enviar entre dos usuarios. Para poder enviar un DM
+es necesario que ambos usuarios pertenezcan al mismo workspace.
+
+#### Endpoints
+
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| GET | /gophers/dm | Obtiene todos los DMs |
+| POST | /gophers/dm | Crea un nuevo DM |
+| GET | /gophers/dm/{id}/messages | Obtiene todos los mensajes de un DM por su id |
+
 
 
 #### Messages
+
+Una vez que autenticado, el usuario puede enviar mensajes a los demas usuarios
+que se encuentran en el mismo canal o DM. Para esto, es necesario iniciar una conexión websocket
+con el servidor.
+
+##### Endpoints
+
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| POST | /gophers/workspace/{workspaceKey}/channel/{channelKey}/message | Crea un nuevo mensaje en un canal |
+| POST | /gophers/workspace/{workspaceKey}/dm/{dmKey}/message | Crea un nuevo mensaje en un DM |
+
+Es importante mencionar que el formato de los mensajes que se envian a traves de los endpoints
+de mensajes es el siguiente:
+
+```json
+{
+    "message": "your-message"
+}
+```
 
