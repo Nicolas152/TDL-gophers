@@ -100,6 +100,15 @@ los usuarios.
 | DELETE | /gophers/workspace/{key} | Elimina un workspace por su key |
 | POST | /gophers/workspace/{key}/join | Permite unirse a un workspace por su key |
 
+Es importante aclarar que por dafault todos los workspaces son privados, por lo que para poder unirse
+a uno es necesario conocer la contraseña del workspace. Para esto, se debe hacer una petición POST al
+endpoint `/gophers/workspace/{key}/join` con el siguiente body:
+
+```json
+{
+    "password": "your-password"
+}
+```
 
 
 #### Channels
